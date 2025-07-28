@@ -45,8 +45,7 @@ intervalDelete (Interval *ival)
       while (evt != NULL)
         {
           EventNotice *next = evt->next;
-          memDeallocSafe (evt->handler.command);
-          memDeallocSafe (evt);
+          noticeDelete (evt);
           evt = next;
         }
     }
@@ -216,6 +215,13 @@ noticeNew (time_t time, const uint8_t *command, size_t command_len)
   evt->bucket_idx = 0;
   evt->prev = evt->next = NULL;
   return evt;
+}
+
+void
+noticeDelete (EventNotice *evt)
+{
+  memDeallocSafe (evt->handler.command);
+  memDeallocSafe (evt);
 }
 
 static inline void
