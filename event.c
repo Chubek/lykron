@@ -39,7 +39,20 @@ intervalNew (time_t interval_width, size_t num_buckets)
 void
 intervalDelete (Interval *ival)
 {
-   
+  for (size_t i = 0; i < ival->num_buckets + 1; i++)
+    {
+      EventNotice *evt = &ival->buckets[i].anchor;
+      while (evt != NULL)
+        {
+          EventNotice *next = evt->next;
+          memDeallocSafe (evt->handler.command);
+          memDeallocSafe (evt);
+          evt = next;
+        }
+    }
+
+  memDeallocSafe (ival->buckets);
+  memDeallocSafe (ival);
 }
 
 EventNotice *
