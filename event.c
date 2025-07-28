@@ -206,6 +206,18 @@ intervalAdjust (Interval *ival, ssize_t idx)
     }
 }
 
+EventNotice *
+noticeNew (time_t time, const uint8_t *command, size_t command_len)
+{
+  EventNotice *evt = memAllocSafe (sizeof (EventNotice));
+  evt->time = time;
+  evt->handler.command = strndup (command, command_len);
+  evt->handler.command_len = command_len;
+  evt->bucket_idx = 0;
+  evt->prev = evt->next = NULL;
+  return evt;
+}
+
 static inline void
 noticeListInit (EventNotice *anchor)
 {
