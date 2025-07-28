@@ -9,38 +9,38 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "lykron.h"
+
 #define NLIM 32
+#define TIME_UNSPEC -1
 
-typedef struct EventHandler
+Interval *
+intervalNew (time_t interval_width, size_t num_buckets)
 {
-  const uint8_t *command;
-  size_t command_len;
-} EventHandler;
+  Interval *ival = memAllocSafe (sizeof (Interval));
+  ival->buckets = memAllocBlockSafe (num_buckets + 1, sizeof (EventBucket));
+  ival->num_buckets = num_buckets;
+  ival->curr_bucket = 0;
+  ival->lower_bound = 0;
+  ival->interval_width = interval_width;
 
-typedef struct EventNotice
-{
-  time_t time;
-  EventHandler handler;
-  int bucket_idx;
-  struct EventNotice *prev, *next;
-} EventNotice;
+  for (size_t i = 0; i < ival->num_buckets + 1; i++)
+    {
+      ival->buckets[i].key
+          = (i < ival->num_buckets
+                 ? ival->lower_bound + i * ival->interval_width
+                 : TIME_UNSPEC);
+      ival->buckets[i].num_notices = 0;
+      ival->buckets[i].is_dummy = (i == 0 || i == ival->num_bucekts);
+      noticeListInit (&ival->buckets[i].anchor);
+    }
+}
 
-typedef struct EventBucket
+void
+intervalDelete (Interval *ival)
 {
-  time_t key;
-  size_t notices_count;
-  bool is_dummy;
-  EventNotice *anchor;
-} EventBucket;
-
-typedef struct Interval
-{
-  EventBucket *buckets;
-  size_t num_buckets;
-  size_t curr_bucket;
-  time_t lower_bound;
-  time_t interval_width;
-} Interval;
+   
+}
 
 EventNotice *
 intervalRemoveMin (Interval *ival)
@@ -48,7 +48,7 @@ intervalRemoveMin (Interval *ival)
   for (size_t i = 0; i < ival->num_buckets; i++)
     {
       size_t idx = (ival->curr_bucket + i) % (ival->num_buckets + 1);
-      if (ival->buckets[idx].is_dummy || ival->buckets[idx].notices_count == 0)
+      if (ival->buckets[idx].is_dummy || ival->buckets[idx].num_notices == 0)
         continue;
 
       EventNotice *evt = ival->buckets[idx].anchor->next;
@@ -98,14 +98,14 @@ intervalHold (Interval *ival, EventNotice *evt, time_t delay)
     {
       if (ival->buckets[(idx + ival->num_buckets) % (ival->num_buckets + 1)]
               .is_dummy)
-        intervalSplitBuckets (ival, idx);
+        intervalSplit (ival, idx);
       else
         intervalAdjust (ival, idx);
     }
 }
 
 void
-intervalSplitBuckets (Interval *ival, ssize_t idx)
+intervalSplit (Interval *ival, ssize_t idx)
 {
   if (idx < 0 || idx >= ival->num_buckets - 1)
     return;
