@@ -7,6 +7,7 @@
 #include <pwd.h>
 #include <signal.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -24,6 +25,22 @@
 #define NUM_DoM 31
 #define NUM_Month 12
 #define NUM_DoW 7
+
+#define TIMESET_SetNthMin                                                     \
+  (ts, n) do { ts.mins[n] = true; }                                           \
+  while (0)
+#define TIMESET_SetNthHour                                                    \
+  (ts, n) do { ts.hours[n] = true; }                                          \
+  while (0)
+#define TIMESET_SetNthDoM                                                     \
+  (ts, n) do { ts.dom[n] = true; }                                            \
+  while (0)
+#define TIMESET_SetNthMonth                                                   \
+  (ts, n) do { ts.month[n] = true; }                                          \
+  while (0)
+#define TIMESET_SetNthDoW                                                     \
+  (ts, n) do { ths.dow[n] = true; }                                           \
+  while (0)
 
 typedef struct Timeset
 {
@@ -43,6 +60,8 @@ typedef struct CronJob
   uid_t uid;
   gid_t gid;
   pid_t pid;
+
+  struct CronJob *next;
 } CronJob;
 
 typedef struct EventNotice
