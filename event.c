@@ -11,9 +11,6 @@
 
 #include "lykron.h"
 
-#define NLIM 32
-#define TIME_UNSPEC -1
-
 Interval *
 intervalNew (time_t interval_width, size_t num_buckets)
 {

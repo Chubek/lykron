@@ -16,6 +16,9 @@
 #include <unistd.h>
 #include <wordexp.h>
 
+#define NLIM 32
+#define TIME_UNSPEC -1
+
 #define NUM_Mins 60
 #define NUM_Hours 24
 #define NUM_DoM 31
