@@ -45,7 +45,7 @@ intervalDelete (Interval *ival)
       while (evt != NULL)
         {
           EventNotice *next = evt->next;
-          noticeDelete (evt);
+          memDeallocSafe (evt);
           evt = next;
         }
     }
@@ -206,22 +206,14 @@ intervalAdjust (Interval *ival, ssize_t idx)
 }
 
 EventNotice *
-noticeNew (time_t time, const uint8_t *command, size_t command_len)
+noticeNew (time_t time, CronJob *job)
 {
   EventNotice *evt = memAllocSafe (sizeof (EventNotice));
   evt->time = time;
-  evt->handler.command = strndup (command, command_len);
-  evt->handler.command_len = command_len;
+  evt->job = job;
   evt->bucket_idx = 0;
   evt->prev = evt->next = NULL;
   return evt;
-}
-
-void
-noticeDelete (EventNotice *evt)
-{
-  memDeallocSafe (evt->handler.command);
-  memDeallocSafe (evt);
 }
 
 static inline void
