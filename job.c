@@ -27,3 +27,15 @@ timesetComputeNextOccurance (Timeset *tset, time_t now)
 
   return (time_t)TIME_UNSPEC;
 }
+
+void
+cronJobQueue (CronJob *cj, Interval *ival)
+{
+  time_t now = time (NULL);
+  time_t next_occur = timesetComputeNextOccurance (&cj->timeset, now);
+
+  EventNotice *evt = noticeNew (next_occur, cj->command, cj->command_len);
+
+  time_t delay = next_occur - ival->lower_bound;
+  intervalHold (ival, evt, delay);
+}
