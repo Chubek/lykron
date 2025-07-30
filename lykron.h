@@ -57,7 +57,7 @@ typedef struct CronJob
   const uint8_t *command;
   size_t command_len;
 
-  const char user[LOG_NAME_MAX + 1];
+  const char user[LOGIN_NAME_MAX + 1];
   uid_t uid;
   gid_t gid;
   pid_t pid;
@@ -68,7 +68,7 @@ typedef struct CronJob
 typedef struct CronTab
 {
   const char path[PATH_MAX + 1];
-  const char user[LOG_NAME_MAX + 1];
+  const char user[LOGIN_NAME_MAX + 1];
   time_t mtime;
 
   struct CronTab *next;
@@ -82,12 +82,14 @@ typedef struct Environ
     uint8_t *value;
   } *symbols;
   size_t num_symbols;
+  size_t max_symbols;
 
   const char **original_environ;
   const char shell[PATH_MAX + 1];
 
   const char (*tab_dirs)[PATH_MAX + 1];
   size_t num_tab_dirs;
+  size_t max_tab_dirs;
 
   CronTab *tabs;
   CronJob *jobs;

@@ -32,7 +32,7 @@ timesetComputeNextOccurance (Timeset *tset, time_t now)
 }
 
 CronJob *
-cronJobNew (Timeset *ts, const uint8_t *command, size_t command_len,
+cronjobNew (Timeset *ts, const uint8_t *command, size_t command_len,
             const char *user)
 {
   CronJob *cj = memAllocSafe (sizeof (CronJob));
@@ -45,7 +45,7 @@ cronJobNew (Timeset *ts, const uint8_t *command, size_t command_len,
   if (user == NULL)
     strncat (&cj->user[0], "root", 4);
   else
-    strncat (&cj->user[0], user, LOG_NAME_MAX);
+    strncat (&cj->user[0], user, LOGIN_NAME_MAX);
 
   struct passwd *pwd = getpwnam (&cj->user[0]);
   cj->uid = pwd->pw_uid;
@@ -55,7 +55,7 @@ cronJobNew (Timeset *ts, const uint8_t *command, size_t command_len,
 }
 
 void
-cronJobDelete (CronJob *cj)
+cronjobListDelete (CronJob *cj)
 {
   if (cj == NULL)
     return;
@@ -65,11 +65,11 @@ cronJobDelete (CronJob *cj)
   memDeallocSafe (cj->command);
   memDeallocSafe (cj);
 
-  cronJobDelete (next);
+  cronjobDelete (next);
 }
 
 void
-cronJobListLink (CronJob *hcj, CronJob *ncj)
+cronjobListLink (CronJob *hcj, CronJob *ncj)
 {
   CronJob *tcj = NULL;
   for (tcj = hcj; tcj->next; tcj = tcj->next)
@@ -78,7 +78,7 @@ cronJobListLink (CronJob *hcj, CronJob *ncj)
 }
 
 void
-cronJobQueue (CronJob *cj, Interval *ival)
+cronjobQueue (CronJob *cj, Interval *ival)
 {
   time_t now = time (NULL);
   time_t next_occur = timesetComputeNextOccurance (&cj->timeset, now);
