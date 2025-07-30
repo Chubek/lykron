@@ -1,3 +1,5 @@
+#define POSIX_SOURCE
+#define POSIX_C_SOURCE
 #include <limits.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -5,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/wait.h>
+#include <sys/timerfd.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -200,6 +202,70 @@ intervalAdjust (Interval *ival, ssize_t idx)
         }
       cursor = prev;
     }
+}
+
+void
+intervalExecuteLoop (Interval *ival)
+{
+  int tfd = timerfd_create (CLOCK_REALTIME, 0);
+  while (true)
+    {
+      EventNotice *evt = intervalRemoveMin (ival);
+      time_t now = time (NULL);
+
+      if (evt->time <= now)
+        {
+          cronjobExecute (evt->job);
+
+          time_t next_time
+              = timesetComputeNextOccurence (&evt->job->timeset, now + 60);
+          if (next_time != (time_t)TIME_UNSPEC)
+            {
+              evt->time = next_time;
+              intervalHold (ival, evt, next_time - ival->lower_bound);
+            }
+
+          continue;
+        }
+
+      struct itimerspec its = (struct itimerspec){
+        .it_value.tv_sec = evt->time,
+        .it_value.tv_nsec = 0,
+      };
+
+      timerfd_settime (tfd, TFD_TIME_ABSTIME, &its, NULL);
+
+      struct pollfd pfd = (struct pollfd){
+        .fd = tfd,
+        .events = POLLIN,
+      };
+      while (poll (&pfd, 1, -1) > 0)
+        {
+          if (pfd.revents & POLLIN)
+            {
+              uint64_t expirations = 0;
+              read (tfd, &expirations, sizeof (expirations));
+
+              now = time (NULL);
+              if (evt->time <= now)
+                {
+                  cronjobExecute (evt->job);
+
+                  time_t next_time = timesetComputeNextOccurence (
+                      &evt->job->timeset, now + 60);
+                  if (next_time != (time_t)TIME_UNSPEC)
+                    {
+                      evt->time = next_time;
+                      intervalHold (ival, evt, next_time - ival->lower_bound);
+                    }
+
+                  break;
+                }
+            }
+        }
+    }
+
+  close (tfd);
 }
 
 EventNotice *
