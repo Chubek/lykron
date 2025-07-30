@@ -17,6 +17,16 @@
 #include <unistd.h>
 #include <wordexp.h>
 
+#ifndef TABLE_DIRS_ADDITIONAL
+#define TABLE_DIRS_ADDITIONAL
+#endif
+
+#ifndef TABLE_FILE_SYSWIDE
+#define TABLE_FILE_SYSWIDE "/etc/crontab"
+#endif
+
+#define MAX_BUF 4096
+
 #define NLIM 32
 #define TIME_UNSPEC -1
 
@@ -56,11 +66,18 @@ typedef struct CronJob
   Timeset timeset;
   const uint8_t *command;
   size_t command_len;
+  char **argv;
+  size_t argc;
 
   const char user[LOGIN_NAME_MAX + 1];
   uid_t uid;
   gid_t gid;
   pid_t pid;
+
+  int last_exit_status;
+  time_t last_exec_time;
+  char *last_output;
+  size_t last_output_len;
 
   struct CronJob *next;
 } CronJob;
@@ -70,30 +87,11 @@ typedef struct CronTab
   const char path[PATH_MAX + 1];
   const char user[LOGIN_NAME_MAX + 1];
   time_t mtime;
+  FILE *stream;
 
+  CronJob *first_job;
   struct CronTab *next;
 } CronTab;
-
-typedef struct Environ
-{
-  struct Symbol
-  {
-    const uint8_t *name;
-    uint8_t *value;
-  } *symbols;
-  size_t num_symbols;
-  size_t max_symbols;
-
-  const char **original_environ;
-  const char shell[PATH_MAX + 1];
-
-  const char (*tab_dirs)[PATH_MAX + 1];
-  size_t num_tab_dirs;
-  size_t max_tab_dirs;
-
-  CronTab *tabs;
-  CronJob *jobs;
-} Environ;
 
 typedef struct EventNotice
 {
@@ -119,5 +117,12 @@ typedef struct Interval
   time_t lower_bound;
   time_t interval_width;
 } Interval;
+
+static const char *TABLE_DIRS[] = {
+  "/etc/cron.d/",
+  "/var/spool/cron/",
+  TABLE_DIRS_ADDITIONAL,
+  NULL,
+};
 
 #endif
