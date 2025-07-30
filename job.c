@@ -7,7 +7,7 @@
 #include "lykron.h"
 
 time_t
-timesetComputeNextOccurance (Timeset *tset, time_t now)
+timesetComputeNextOccurence (Timeset *tset, time_t now)
 {
   struct tm tm;
   localtime_r (&now, &tm);
@@ -81,18 +81,6 @@ cronjobListLink (CronJob *hcj, CronJob *ncj)
 }
 
 void
-cronjobQueue (CronJob *cj, Interval *ival)
-{
-  time_t now = time (NULL);
-  time_t next_occur = timesetComputeNextOccurance (&cj->timeset, now);
-
-  EventNotice *evt = noticeNew (next_occur, cj->command, cj->command_len);
-
-  time_t delay = next_occur - ival->lower_bound;
-  intervalHold (ival, evt, delay);
-}
-
-void
 cronjobExecute (CronJob *cj, char *const envp[])
 {
   int pipfd[2];
@@ -135,7 +123,7 @@ cronjobExecute (CronJob *cj, char *const envp[])
           = memCopyAtOffsetSafe (cj->last_output, buffer, total_read, n_read);
       total_read += n_read;
     }
-  cj->last_output_len_read = total_read;
+  cj->last_output_len = total_read;
 
   waitpid (cj->pid, &cj->last_exit_status);
   cj->last_exec_time = time (NULL);
