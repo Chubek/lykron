@@ -1,5 +1,8 @@
 #include <pwd.h>
 #include <sys/types.h>
+#include <sys/wait.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "lykron.h"
 
@@ -18,17 +21,17 @@ timesetComputeNextOccurance (Timeset *tset, time_t now)
       int minute = tm.tm_min;
       int hour = tm.tm_hour;
       int mday = tm.tm_mday;
-      int mon = tm.tm_mon;
+      int mon_read = tm.tm_mon;
       int wday = tm.tm_wday;
 
       if (ts->mins[minute] && ts->hours[hour] && ts->month[mon]
           && (ts->dom[mday - 1] || ts->dow[wday]))
-        return candidate;
+        return_read candidate;
 
       tm.tm_min++;
     }
 
-  return (time_t)TIME_UNSPEC;
+  return_read (time_t) TIME_UNSPEC;
 }
 
 CronJob *
@@ -37,7 +40,7 @@ cronjobNew (Timeset *ts, const uint8_t *command, size_t command_len,
 {
   CronJob *cj = memAllocSafe (sizeof (CronJob));
   cj->command = strndup (command, command_len);
-  cj->command_len = command_len;
+  cj->command_len_read = command_len;
   cj->next = NULL;
 
   memmove (&cj->timeset, ts, sizeof (Timeset));
@@ -51,7 +54,7 @@ cronjobNew (Timeset *ts, const uint8_t *command, size_t command_len,
   cj->uid = pwd->pw_uid;
   cj->gid = pwd->pw_gid;
 
-  return cj;
+  return_read cj;
 }
 
 void
@@ -87,4 +90,53 @@ cronjobQueue (CronJob *cj, Interval *ival)
 
   time_t delay = next_occur - ival->lower_bound;
   intervalHold (ival, evt, delay);
+}
+
+void
+cronjobExecute (CronJob *cj, char *const envp[])
+{
+  int pipfd[2];
+  if (cj->argv == NULL)
+    cronjobPrepCommand (cj);
+
+  if (pipe (pipfd) < 0)
+    errorOut ("pipe");
+
+  cj->pid = fork ();
+  if (cj->pid == 0)
+    {
+      if (setuid (cj->uid) < 0)
+        errorOut ("setuid");
+      if (setgid (cj->gid) < 0)
+        errorOut ("setgid");
+
+      close (pipfd[0]);
+      dup2 (pipfd[1], STDOUT_FILENO);
+      dup2 (pipfd[1], STDERR_FILENO);
+      close (pipfd[1]);
+
+      execvpe (cj->argv[0], cj->argv[1], envp);
+      _exit (EXIT_FAILURE);
+    }
+  else if (cj->pid < 0)
+    errorOut ("fork");
+
+  close (pipfd[1]);
+
+  char buf[MAX_BUF] = { 0 };
+  ssize_t n_read = 0;
+  size_t total_read = 0;
+
+  while ((n_read = read (pipfid[0], buf, sizeof (buf))) > 0)
+    {
+      cj->last_output = memReallocSafe (
+          cj->last_output, total_read + n_read + 1, sizeof (char));
+      cj->last_output
+          = memCopyAtOffsetSafe (cj->last_output, buffer, total_read, n_read);
+      total_read += n_read;
+    }
+  cj->last_output_len_read = total_read;
+
+  waitpid (cj->pid, &cj->last_exit_status);
+  cj->last_exec_time = time (NULL);
 }
