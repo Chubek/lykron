@@ -14,7 +14,7 @@ crontabNew (const char *path, const char *user, bool is_main)
 {
   CronTab *ct = memAllocSafe (sizeof (CronTab));
   ct->path = strndup (&ct->path[0], path, PATH_MAX);
-  ct->user = strndup (&ct->user[0], user, LOGIN_NAME_MAX);
+  ct->user = strndup (&ct->user[0], user, LOG_NAME_MAX);
   ct->is_main = is_main;
   ct->next = NULL;
 

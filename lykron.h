@@ -57,7 +57,7 @@ typedef struct CronJob
   const uint8_t *command;
   size_t command_len;
 
-  const char user[LOGIN_NAME_MAX + 1];
+  const char user[LOG_NAME_MAX + 1];
   uid_t uid;
   gid_t gid;
   pid_t pid;
@@ -65,24 +65,11 @@ typedef struct CronJob
   struct CronJob *next;
 } CronJob;
 
-typedef struct TabParser
-{
-
-} TabParser;
-
-typedef struct TabLinter
-{
-
-} TabLinter;
-
 typedef struct CronTab
 {
   const char path[PATH_MAX + 1];
-  FILE *stream;
+  const char user[LOG_NAME_MAX + 1];
   time_t mtime;
-
-  TabParser *parser;
-  TabLinter *linter;
 
   struct CronTab *next;
 } CronTab;
