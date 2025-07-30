@@ -56,6 +56,7 @@ typedef struct CronJob
   Timeset timeset;
   const uint8_t *command;
   size_t command_len;
+
   const char user[LOGIN_NAME_MAX + 1];
   uid_t uid;
   gid_t gid;
@@ -63,6 +64,47 @@ typedef struct CronJob
 
   struct CronJob *next;
 } CronJob;
+
+typedef struct TabParser
+{
+
+} TabParser;
+
+typedef struct TabLinter
+{
+
+} TabLinter;
+
+typedef struct CronTab
+{
+  const char path[PATH_MAX + 1];
+  FILE *stream;
+  time_t mtime;
+
+  TabParser *parser;
+  TabLinter *linter;
+
+  struct CronTab *next;
+} CronTab;
+
+typedef struct Environ
+{
+  struct Symbol
+  {
+    const uint8_t *name;
+    uint8_t *value;
+  } *symbols;
+  size_t num_symbols;
+
+  const char **original_environ;
+  const char shell[PATH_MAX + 1];
+
+  const char (*tab_dirs)[PATH_MAX + 1];
+  size_t num_tab_dirs;
+
+  CronTab *tabs;
+  CronJob *jobs;
+} Environ;
 
 typedef struct EventNotice
 {
