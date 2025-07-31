@@ -13,7 +13,7 @@
 #include "lykron.h"
 
 CronTab *
-crontabNew (const char *path, const char *user, bool is_main)
+crontabNew (const char *path, const char *user)
 {
   CronTab *ct = memAllocSafe (sizeof (CronTab));
   ct->path = strndup (&ct->path[0], path, PATH_MAX);
@@ -131,12 +131,14 @@ crontabLoadAll (void)
         {
           if (entry->d_type == DT_REG)
             {
+	      char *joined_path = pathJoin (path, entry->d_name);
               CronTab *ct
-                  = crontabLoadFromFile (pathJoin (path, entry->d_name));
+                  = crontabLoadFromFile (joined_path);
               if (ctlst == NULL)
                 ctlst = ct;
               else
                 crontabListLink (ctlst, ct);
+	      memDeallocSafe (joined_path);
             }
         }
 
