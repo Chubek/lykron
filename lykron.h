@@ -25,6 +25,10 @@
 #define TABLE_FILE_SYSWIDE "/etc/crontab"
 #endif
 
+#ifndef INIT_SYMTAB_SIZE
+#define INIT_SYMTAB_SIZE 1024
+#endif
+
 #define MAX_BUF 4096
 
 #define NLIM 32
@@ -82,6 +86,18 @@ typedef struct CronJob
   struct CronJob *next;
 } CronJob;
 
+typedef struct Symtbl
+{
+  struct Symbol
+  {
+    const uint8_t *key;
+    uint8_t *value;
+    bool occupied;
+  } *symbols;
+  size_t num_symbols;
+  size_t max_symbols;
+} Symtbl;
+
 typedef struct CronTab
 {
   const char path[PATH_MAX + 1];
@@ -89,6 +105,7 @@ typedef struct CronTab
   time_t mtime;
   FILE *stream;
 
+  Symtbl *stab;
   CronJob *first_job;
   struct CronTab *next;
 } CronTab;
@@ -118,11 +135,53 @@ typedef struct Interval
   time_t interval_width;
 } Interval;
 
+typedef enum
+{
+  LINE_Comment,
+  LINE_Directive,
+  LINE_Assign,
+  LINE_Field,
+  LINE_None,
+} LineKind;
+
 static const char *TABLE_DIRS[] = {
   "/etc/cron.d/",
   "/var/spool/cron/",
   TABLE_DIRS_ADDITIONAL,
   NULL,
 };
+
+static inline char *
+pathJoin (const char *ph, char *pt)
+{
+  char *pj = memAllocBlockSafe (PATH_MAX * 2, sizeof (char));
+  strncat (pj, ph, PATH_MAX);
+  strncat (pj, pt, PATH_MAX);
+
+  return pj;
+}
+
+static inline uint32_t
+_fnv1a_hash32 (const uint8_t *data)
+{
+  uint32_t hash = 0x811c9dc5u;
+  uint8_t chr = 0;
+
+  while ((chr = *data++))
+    {
+      hash ^= chr;
+      hash *= 0x01000193u;
+    }
+
+  return hash;
+}
+
+static inline void
+freeEnvironPointer (const char **envp)
+{
+  for (char *e = *envp; e; e++)
+    memDeallocSafe (e);
+  memDeallocSafe (envp);
+}
 
 #endif
