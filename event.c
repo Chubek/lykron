@@ -14,20 +14,20 @@
 #include "lykron.h"
 
 Scheduler *
-schedulerNew (time_t scheduler_width, size_t num_buckets)
+schedulerNew (time_t interval_width, size_t num_buckets)
 {
   Scheduler *sched = memAllocSafe (sizeof (Scheduler));
   sched->buckets = memAllocBlockSafe (num_buckets + 1, sizeof (EventBucket));
   sched->num_buckets = num_buckets;
   sched->curr_bucket = 0;
   sched->lower_bound = 0;
-  sched->scheduler_width = scheduler_width;
+  sched->interval_width = interval_width;
 
   for (size_t i = 0; i < sched->num_buckets + 1; i++)
     {
       sched->buckets[i].key
           = (i < sched->num_buckets
-                 ? sched->lower_bound + i * sched->scheduler_width
+                 ? sched->lower_bound + i * sched->interval_width
                  : TIME_UNSPEC);
       sched->buckets[i].num_notices = 0;
       sched->buckets[i].is_dummy = (i == 0 || i == sched->num_bucekts);
@@ -87,7 +87,7 @@ schedulerHold (Scheduler *sched, EventNotice *evt, time_t delay)
   noticeListUnlink (evt);
   sched->buckets[evt->bucket_idx].num_notices--;
 
-  time_t rel = (new_t - sched->lower_bound) / sched->scheduler_width;
+  time_t rel = (new_t - sched->lower_bound) / sched->interval_width;
   size_t offst = FLOOR (rel);
   if (offst > sched->num_buckets)
     offst = sched->num_buckets;
@@ -127,7 +127,7 @@ schedulerSplit (Scheduler *sched, ssize_t idx)
   if (!new_bucket->is_dummy)
     return;
 
-  time_t mid = old_bucket->key + sched->scheduler_width / 2.0;
+  time_t mid = old_bucket->key + sched->interval_width / 2.0;
 
   noticeListInit (&new_bucket->anchor);
   new_bucket->key = mid;
@@ -169,10 +169,10 @@ schedulerMoveDummy (Scheduler *sched)
     }
 
   b->count = 0;
-  b->key = sched->lower_bound + sched->num_buckets * sched->scheduler_width;
+  b->key = sched->lower_bound + sched->num_buckets * sched->interval_width;
   b->is_dummy = true;
 
-  sched->lower_bound += sched->scheduler_width;
+  sched->lower_bound += sched->interval_width;
   sched->curr_bucket = (sched->curr_bucket + 1) % (sched->num_buckets + 1);
 }
 

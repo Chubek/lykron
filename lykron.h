@@ -1,4 +1,4 @@
-#ifndef LYKRON_H
+ifndef LYKRON_H
 #define LYKRON_H
 
 #define _POSIX_SOURCE
@@ -132,7 +132,7 @@ typedef struct Scheduler
   size_t num_buckets;
   size_t curr_bucket;
   time_t lower_bound;
-  time_t scheduler_width;
+  time_t interval_width;
 } Scheduler;
 
 typedef enum
