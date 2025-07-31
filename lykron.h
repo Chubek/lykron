@@ -126,14 +126,14 @@ typedef struct EventBucket
   EventNotice anchor;
 } EventBucket;
 
-typedef struct Interval
+typedef struct Scheduler
 {
   EventBucket *buckets;
   size_t num_buckets;
   size_t curr_bucket;
   time_t lower_bound;
-  time_t interval_width;
-} Interval;
+  time_t scheduler_width;
+} Scheduler;
 
 typedef enum
 {

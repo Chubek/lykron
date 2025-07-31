@@ -13,34 +13,34 @@
 
 #include "lykron.h"
 
-Interval *
-intervalNew (time_t interval_width, size_t num_buckets)
+Scheduler *
+schedulerNew (time_t scheduler_width, size_t num_buckets)
 {
-  Interval *ival = memAllocSafe (sizeof (Interval));
-  ival->buckets = memAllocBlockSafe (num_buckets + 1, sizeof (EventBucket));
-  ival->num_buckets = num_buckets;
-  ival->curr_bucket = 0;
-  ival->lower_bound = 0;
-  ival->interval_width = interval_width;
+  Scheduler *sched = memAllocSafe (sizeof (Scheduler));
+  sched->buckets = memAllocBlockSafe (num_buckets + 1, sizeof (EventBucket));
+  sched->num_buckets = num_buckets;
+  sched->curr_bucket = 0;
+  sched->lower_bound = 0;
+  sched->scheduler_width = scheduler_width;
 
-  for (size_t i = 0; i < ival->num_buckets + 1; i++)
+  for (size_t i = 0; i < sched->num_buckets + 1; i++)
     {
-      ival->buckets[i].key
-          = (i < ival->num_buckets
-                 ? ival->lower_bound + i * ival->interval_width
+      sched->buckets[i].key
+          = (i < sched->num_buckets
+                 ? sched->lower_bound + i * sched->scheduler_width
                  : TIME_UNSPEC);
-      ival->buckets[i].num_notices = 0;
-      ival->buckets[i].is_dummy = (i == 0 || i == ival->num_bucekts);
-      noticeListInit (&ival->buckets[i].anchor);
+      sched->buckets[i].num_notices = 0;
+      sched->buckets[i].is_dummy = (i == 0 || i == sched->num_bucekts);
+      noticeListInit (&sched->buckets[i].anchor);
     }
 }
 
 void
-intervalDelete (Interval *ival)
+schedulerDelete (Scheduler *sched)
 {
-  for (size_t i = 0; i < ival->num_buckets + 1; i++)
+  for (size_t i = 0; i < sched->num_buckets + 1; i++)
     {
-      EventNotice *evt = &ival->buckets[i].anchor;
+      EventNotice *evt = &sched->buckets[i].anchor;
       while (evt != NULL)
         {
           EventNotice *next = evt->next;
@@ -49,24 +49,24 @@ intervalDelete (Interval *ival)
         }
     }
 
-  memDeallocSafe (ival->buckets);
-  memDeallocSafe (ival);
+  memDeallocSafe (sched->buckets);
+  memDeallocSafe (sched);
 }
 
 EventNotice *
-intervalRemoveMin (Interval *ival)
+schedulerRemoveMin (Scheduler *sched)
 {
-  for (size_t i = 0; i < ival->num_buckets; i++)
+  for (size_t i = 0; i < sched->num_buckets; i++)
     {
-      size_t idx = (ival->curr_bucket + i) % (ival->num_buckets + 1);
-      if (ival->buckets[idx].is_dummy || ival->buckets[idx].num_notices == 0)
+      size_t idx = (sched->curr_bucket + i) % (sched->num_buckets + 1);
+      if (sched->buckets[idx].is_dummy || sched->buckets[idx].num_notices == 0)
         continue;
 
-      EventNotice *evt = ival->buckets[idx].anchor->next;
+      EventNotice *evt = sched->buckets[idx].anchor->next;
       noticeListUnlink (evt);
-      ival->buckets[idx].num_notices--;
-      ival->curr_bucket = idx;
-      ival->lower_bound = ival->buckets[idx].key;
+      sched->buckets[idx].num_notices--;
+      sched->curr_bucket = idx;
+      sched->lower_bound = sched->buckets[idx].key;
 
       return evt;
     }
@@ -75,59 +75,59 @@ intervalRemoveMin (Interval *ival)
 }
 
 void
-intervalHold (Interval *ival, EventNotice *evt, time_t delay)
+schedulerHold (Scheduler *sched, EventNotice *evt, time_t delay)
 {
   time_t new_t = evt->time + delay;
   evt->time = new_t;
 
-  if (evt->next && evt->next != &ival->buckets[evt->bucket_idx].anchor
+  if (evt->next && evt->next != &sched->buckets[evt->bucket_idx].anchor
       && evt->next->time >= new_t)
     return;
 
   noticeListUnlink (evt);
-  ival->buckets[evt->bucket_idx].num_notices--;
+  sched->buckets[evt->bucket_idx].num_notices--;
 
-  time_t rel = (new_t - ival->lower_bound) / ival->interval_width;
+  time_t rel = (new_t - sched->lower_bound) / sched->scheduler_width;
   size_t offst = FLOOR (rel);
-  if (offst > ival->num_buckets)
-    offst = ival->num_buckets;
-  ssize_t idx = (ival->curr_bucket + offst) % (ival->num_buckets + 1);
+  if (offst > sched->num_buckets)
+    offst = sched->num_buckets;
+  ssize_t idx = (sched->curr_bucket + offst) % (sched->num_buckets + 1);
 
-  while (ival->buckets[idx].key > new_t)
-    idx = (idx == 0 ? ival->num_buckets : idx - 1);
+  while (sched->buckets[idx].key > new_t)
+    idx = (idx == 0 ? sched->num_buckets : idx - 1);
 
-  EventNotice *cursor = &ival->buckets[idx].anchor;
-  while (cursor->next != &ival->buckets[idx].anchor
-         && ival->next->time <= new_t)
+  EventNotice *cursor = &sched->buckets[idx].anchor;
+  while (cursor->next != &sched->buckets[idx].anchor
+         && sched->next->time <= new_t)
     cursor = cursor->next;
 
   noticeListLinkAfter (cursor, evt);
   evt->bucket_idx = idx;
-  ival->buckets[idx].num_notices++;
+  sched->buckets[idx].num_notices++;
 
-  if (ival->buckets[idx].num_notices > NLIM)
+  if (sched->buckets[idx].num_notices > NLIM)
     {
-      if (ival->buckets[(idx + ival->num_buckets) % (ival->num_buckets + 1)]
+      if (sched->buckets[(idx + sched->num_buckets) % (sched->num_buckets + 1)]
               .is_dummy)
-        intervalSplit (ival, idx);
+        schedulerSplit (sched, idx);
       else
-        intervalAdjust (ival, idx);
+        schedulerAdjust (sched, idx);
     }
 }
 
 void
-intervalSplit (Interval *ival, ssize_t idx)
+schedulerSplit (Scheduler *sched, ssize_t idx)
 {
-  if (idx < 0 || idx >= ival->num_buckets - 1)
+  if (idx < 0 || idx >= sched->num_buckets - 1)
     return;
 
-  EventBucket *old_bucket = &ival->buckets[idx];
-  EventBucket *new_bucket = &ival->buckets[ival->num_buckets];
+  EventBucket *old_bucket = &sched->buckets[idx];
+  EventBucket *new_bucket = &sched->buckets[sched->num_buckets];
 
   if (!new_bucket->is_dummy)
     return;
 
-  time_t mid = old_bucket->key + ival->interval_width / 2.0;
+  time_t mid = old_bucket->key + sched->scheduler_width / 2.0;
 
   noticeListInit (&new_bucket->anchor);
   new_bucket->key = mid;
@@ -142,22 +142,22 @@ intervalSplit (Interval *ival, ssize_t idx)
         {
           noticeListUnlink (cursor);
           noticeListLinkAfter (&new_bucket->anchor, cursor);
-          cursor->bucket_idx = ival->num_buckets;
+          cursor->bucket_idx = sched->num_buckets;
           old_bucket->num_notices--;
           new_bucket->num_notices++;
         }
       cursor = next;
     }
 
-  intervalMoveDummy (ival);
+  schedulerMoveDummy (sched);
 }
 
 void
-intervalMoveDummy (Interval *ival)
+schedulerMoveDummy (Scheduler *sched)
 {
-  ssize_t new_dummy_idx = (ival->curr_bucket - 1 + ival->num_buckets + 1)
-                          % (ival->num_buckets + 1);
-  EventBucket *b = &ival->buckets[new_dummy_idx];
+  ssize_t new_dummy_idx = (sched->curr_bucket - 1 + sched->num_buckets + 1)
+                          % (sched->num_buckets + 1);
+  EventBucket *b = &sched->buckets[new_dummy_idx];
 
   EventNotice *cursor = b->anchor.next;
   while (cursor != &b->anchor)
@@ -169,19 +169,19 @@ intervalMoveDummy (Interval *ival)
     }
 
   b->count = 0;
-  b->key = ival->lower_bound + ival->num_buckets * ival->interval_width;
+  b->key = sched->lower_bound + sched->num_buckets * sched->scheduler_width;
   b->is_dummy = true;
 
-  ival->lower_bound += ival->interval_width;
-  ival->curr_bucket = (ival->curr_bucket + 1) % (ival->num_buckets + 1);
+  sched->lower_bound += sched->scheduler_width;
+  sched->curr_bucket = (sched->curr_bucket + 1) % (sched->num_buckets + 1);
 }
 
 void
-intervalAdjust (Interval *ival, ssize_t idx)
+schedulerAdjust (Scheduler *sched, ssize_t idx)
 {
-  size_t next_idx = (idx + 1) % (ival->num_buckets + 1);
-  EventBucket *left = &ival->buckets[idx];
-  EventBucket *right = &ival->buckets[next_idx];
+  size_t next_idx = (idx + 1) % (sched->num_buckets + 1);
+  EventBucket *left = &sched->buckets[idx];
+  EventBucket *right = &sched->buckets[next_idx];
 
   if (left->is_dummy || right->is_dummy)
     return;
@@ -205,12 +205,12 @@ intervalAdjust (Interval *ival, ssize_t idx)
 }
 
 void
-intervalExecuteLoop (Interval *ival)
+schedulerExecuteLoop (Scheduler *sched)
 {
   int tfd = timerfd_create (CLOCK_REALTIME, 0);
   while (true)
     {
-      EventNotice *evt = intervalRemoveMin (ival);
+      EventNotice *evt = schedulerRemoveMin (sched);
       time_t now = time (NULL);
 
       if (evt->time <= now)
@@ -222,7 +222,7 @@ intervalExecuteLoop (Interval *ival)
           if (next_time != (time_t)TIME_UNSPEC)
             {
               evt->time = next_time;
-              intervalHold (ival, evt, next_time - ival->lower_bound);
+              schedulerHold (sched, evt, next_time - sched->lower_bound);
             }
 
           continue;
@@ -256,7 +256,7 @@ intervalExecuteLoop (Interval *ival)
                   if (next_time != (time_t)TIME_UNSPEC)
                     {
                       evt->time = next_time;
-                      intervalHold (ival, evt, next_time - ival->lower_bound);
+                      schedulerHold (sched, evt, next_time - sched->lower_bound);
                     }
 
                   break;
