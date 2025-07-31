@@ -152,7 +152,7 @@ static const char *TABLE_DIRS[] = {
 };
 
 static inline char *
-pathJoin (const char *ph, char *pt)
+_path_join (const char *ph, char *pt)
 {
   char *pj = memAllocBlockSafe (PATH_MAX * 2, sizeof (char));
   strncat (pj, ph, PATH_MAX);
@@ -177,7 +177,7 @@ _fnv1a_hash32 (const uint8_t *data)
 }
 
 static inline void
-freeEnvironPointer (const char **envp)
+_free_envptr (const char **envp)
 {
   for (char *e = *envp; e; e++)
     memDeallocSafe (e);

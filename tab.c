@@ -219,7 +219,7 @@ crontabLoadAll (void)
         {
           if (entry->d_type == DT_REG)
             {
-              char *joined_path = pathJoin (path, entry->d_name);
+              char *joined_path = _path_join (path, entry->d_name);
               CronTab *ct = crontabLoadFromFile (joined_path, false);
               crontabListLink (ctlst, ct);
               memDeallocSafe (joined_path);
