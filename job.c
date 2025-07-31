@@ -130,7 +130,7 @@ cronjobExecute (CronJob *cj, char *const envp[])
 }
 
 void
-cronjobScheduleInit (Scheduker *sched, CronJob *cj)
+cronjobScheduleInit (Scheduler *sched, CronJob *cj)
 {
   time_t now = time (NULL);
   time_t next_time = timesetComputeNextOccurence (&cj->timeset, now);
