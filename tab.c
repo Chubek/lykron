@@ -12,13 +12,101 @@
 
 #include "lykron.h"
 
+Symtbl *
+symtblNew (void)
+{
+  Symtbl *stab = memAllocSafe (sizeof (Symtbl));
+  stab->symbols = memAllocBlockSafe (INIT_SYMTBL_SIZE, sizeof (struct Symbol));
+  stab->num_symbols = 0;
+  stab->max_symbols = INIT_SYMTBL_SIZE;
+
+  return stab;
+}
+
+void
+symtblDelete (Symtbl *stab)
+{
+  for (size_t i = 0; i < stab->max_symbols; i++)
+    {
+      if (stab->symbols[i].occupied)
+        {
+          memDeallocSafe (stab->symbols[i].key);
+          memDeallocSafe (stab->symbols[i].value);
+        }
+    }
+
+  memDeallocSafe (stab->symbols);
+  memDeallocSafe (stab);
+}
+
+void
+symtblSet (Symtbl *stab, const uint8_t *key, uint8_t *value)
+{
+  if (stab->num_symbols + 1 >= stab->max_symbols)
+    {
+      size_t old_max_symbols = stab->max_symbols;
+      stab->max_symbols *= 1.5;
+      stab->symbols
+          = memReallocSafe (stab->symbols, old_max_symbols, stab->max_symbols,
+                            sizeof (struct Symbol));
+    }
+
+  size_t idx = _fnv1a_hash32 (key) % stab->max_symbols;
+  if (stab->symbols[idx].occupied)
+    {
+      memDeallocSafe (stab->symbols[idx].value);
+      stab->symbols[idx].value = strdup (value);
+    }
+  else
+    {
+      stab->symbols[idx].key = strdup (key);
+      stab->symbols[idx].value = strdup (value);
+      stab->symbols[idx].occupied = true;
+      stab->num_symbols++;
+    }
+}
+
+char *
+symtblGet (Symtbl *stab, const uint8_t *key)
+{
+  size_t idx = _fnv1a_hash32 (key) % stab->max_symbols;
+  if (idx >= stab->max_symbols || !stab->symbols[idx].occupied)
+    return NULL;
+  else
+    return stab->symbols[idx].value;
+}
+
+char **
+symtblGetEnvironPointer (Symtbl *stab)
+{
+  char **environ = memAllocBlockSafe (stab->num_symbols + 1, sizeof (char *));
+  size_t env_n = 0;
+  for (size_t i = 0; i < stab->max_symbols; i++)
+    {
+      if (!stab->symbols[i].occupied)
+        continue;
+      size_t key_len = strlen (stab->symbols[i].key);
+      size_t val_len = strlen (stab->symbols[i].value);
+      environ[env_n]
+          = memAllocBlockSafe (key_len + val_len + 2, sizeof (char));
+      strncat (environ[env_n], stab->symbols[i].key, key_len);
+      strncat (environ[env_n], "=", 1);
+      strncat (environ[env_n], stab->symbols[i].value, val_len);
+      env_n++;
+    }
+  environ[stab->num_symbols] = NULL;
+  return environ;
+}
+
 CronTab *
-crontabNew (const char *path, const char *user)
+crontabNew (const char *path, const char *user, bool is_main)
 {
   CronTab *ct = memAllocSafe (sizeof (CronTab));
   ct->path = strndup (&ct->path[0], path, PATH_MAX);
   ct->user = strndup (&ct->user[0], user, LOGIN_NAME_MAX);
   ct->first_job = NULL;
+  ct->is_main = is_main;
+  ct->stab = symtblNew ();
   ct->next = NULL;
 
   struct stat st = { 0 };
@@ -118,7 +206,7 @@ CronTab *
 crontabLoadAll (void)
 {
   const char *path = NULL;
-  CronTab *ctlst = NULL;
+  CronTab *ctlst = crontabLoadFromFile (TABLE_FILE_SYSWIDE, true);
   for (size_t i = 0; TABLE_DIRS[i] != NULL; i++)
     {
       path = TABLE_DIRS[i];
@@ -131,14 +219,10 @@ crontabLoadAll (void)
         {
           if (entry->d_type == DT_REG)
             {
-	      char *joined_path = pathJoin (path, entry->d_name);
-              CronTab *ct
-                  = crontabLoadFromFile (joined_path);
-              if (ctlst == NULL)
-                ctlst = ct;
-              else
-                crontabListLink (ctlst, ct);
-	      memDeallocSafe (joined_path);
+              char *joined_path = pathJoin (path, entry->d_name);
+              CronTab *ct = crontabLoadFromFile (joined_path, false);
+              crontabListLink (ctlst, ct);
+              memDeallocSafe (joined_path);
             }
         }
 
@@ -153,5 +237,10 @@ crontabReload (CronTab *ctlst, const char *path_key)
 {
   for (CronTab *tct = ctlst; tct; tct = tct->next)
     if (strncmp (tct->path, path_key, PATH_MAX))
-      tct = crontabLoadFromFile (tct->path);
+      tct = crontabLoadFromFile (tct->path, tct->is_main);
+}
+
+CronTab *
+crontabLoadFromFile (const char *path, bool is_main)
+{
 }
