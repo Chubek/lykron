@@ -128,3 +128,17 @@ cronjobExecute (CronJob *cj, char *const envp[])
   waitpid (cj->pid, &cj->last_exit_status);
   cj->last_exec_time = time (NULL);
 }
+
+void
+cronjobScheduleInit (Scheduker *sched, CronJob *cj)
+{
+  time_t now = time (NULL);
+  time_t next_time = timesetComputeNextOccurence (&cj->timeset, now);
+
+  if (next_time == (time_t)TIME_UNSPEC)
+    errorOut ("Could not schedule");
+
+  EventNotice *evt = noticeNew (next_time, cj);
+  time_t delay = next_time - sched->lower_bound;
+  schedulerHold (sched, evt, delay);
+}
