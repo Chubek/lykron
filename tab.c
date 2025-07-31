@@ -1,5 +1,6 @@
 #define POSIX_SOURCE
 #define POSIX_C_SOURCE
+#include <dirent.h>
 #include <errno.h>
 #include <limits.h>
 #include <poll.h>
@@ -116,11 +117,39 @@ crontabWatchInotify (CronTab *ctlst)
 CronTab *
 crontabLoadAll (void)
 {
-  // TODO
+  const char *path = NULL;
+  CronTab *ctlst = NULL;
+  for (size_t i = 0; TABLE_DIRS[i] != NULL; i++)
+    {
+      path = TABLE_DIRS[i];
+      DIR *dir = opendir (path);
+      if (dir == NULL)
+        errorOut ("opendir");
+
+      struct dirent *entry;
+      while ((entry = readdir (dir)) != NULL)
+        {
+          if (entry->d_type == DT_REG)
+            {
+              CronTab *ct
+                  = crontabLoadFromFile (pathJoin (path, entry->d_name));
+              if (ctlst == NULL)
+                ctlst = ct;
+              else
+                crontabListLink (ctlst, ct);
+            }
+        }
+
+      closedir (dir);
+    }
+
+  return ctlst;
 }
 
 void
 crontabReload (CronTab *ctlst, const char *path_key)
 {
-  // TODO
+  for (CronTab *tct = ctlst; tct; tct = tct->next)
+    if (strncmp (tct->path, path_key, PATH_MAX))
+      tct = crontabLoadFromFile (tct->path);
 }
