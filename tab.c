@@ -106,6 +106,7 @@ crontabNew (const char *path, const char *user, bool is_main)
   ct->user = strndup (&ct->user[0], user, LOGIN_NAME_MAX);
   ct->first_job = NULL;
   ct->is_main = is_main;
+  ct->sched = NULL;
   ct->stab = symtblNew ();
   ct->next = NULL;
 

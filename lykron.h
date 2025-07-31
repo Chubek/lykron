@@ -1,4 +1,4 @@
-ifndef LYKRON_H
+efndef LYKRON_H
 #define LYKRON_H
 
 #define _POSIX_SOURCE
@@ -98,18 +98,6 @@ typedef struct Symtbl
   size_t max_symbols;
 } Symtbl;
 
-typedef struct CronTab
-{
-  const char path[PATH_MAX + 1];
-  const char user[LOGIN_NAME_MAX + 1];
-  time_t mtime;
-  FILE *stream;
-
-  Symtbl *stab;
-  CronJob *first_job;
-  struct CronTab *next;
-} CronTab;
-
 typedef struct EventNotice
 {
   time_t time;
@@ -134,6 +122,19 @@ typedef struct Scheduler
   time_t lower_bound;
   time_t interval_width;
 } Scheduler;
+
+typedef struct CronTab
+{
+  const char path[PATH_MAX + 1];
+  const char user[LOGIN_NAME_MAX + 1];
+  time_t mtime;
+  FILE *stream;
+
+  Symtbl *stab;
+  Scheduler *sched;
+  CronJob *first_job;
+  struct CronTab *next;
+} CronTab;
 
 typedef enum
 {
