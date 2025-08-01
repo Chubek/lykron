@@ -1,4 +1,4 @@
-efndef LYKRON_H
+#ifndef LYKRON_H
 #define LYKRON_H
 
 #define _POSIX_SOURCE
@@ -25,16 +25,27 @@ efndef LYKRON_H
 #define TABLE_FILE_SYSWIDE "/etc/crontab"
 #endif
 
+#ifndef JOBS_CACHE_DIR
+#define JOBS_CACHE_DIR "/run/lykron/cache/"
+#endif
+
+#ifndef CROND_PID_FILE
+#define CROND_PID_FILE "/run/lykron.pid"
+#endif
+
 #ifndef INIT_SYMTBL_SIZE
 #define INIT_SYMTBL_SIZE 1024
 #endif
 
 #ifndef INIT_SYMTBL_LOG2
 #define INIT_SYMTBL_LOG2 10
+#endif
 
 #define PHI 0x5851f42dULL
 
 #define MAX_BUF 4096
+#define MAX_ID 16
+#define ARGC_DFL 32
 
 #define NLIM 32
 #define TIME_UNSPEC (time_t)-1
@@ -55,23 +66,7 @@ efndef LYKRON_H
     }                                                                         \
   while (0)
 
-#define TIMESET_SetNthMin                                                     \
-  (ts, n) do { ts.mins[n] = true; }                                           \
-  while (0)
-#define TIMESET_SetNthHour                                                    \
-  (ts, n) do { ts.hours[n] = true; }                                          \
-  while (0)
-#define TIMESET_SetNthDoM                                                     \
-  (ts, n) do { ts.dom[n] = true; }                                            \
-  while (0)
-#define TIMESET_SetNthMonth                                                   \
-  (ts, n) do { ts.month[n] = true; }                                          \
-  while (0)
-#define TIMESET_SetNthDoW                                                     \
-  (ts, n) do { ths.dow[n] = true; }                                           \
-  while (0)
-
-    typedef struct Timeset
+typedef struct Timeset
 {
   bool mins[NUM_Mins];
   bool hours[NUM_Hours];
@@ -83,6 +78,7 @@ efndef LYKRON_H
 typedef struct CronJob
 {
   Timeset timeset;
+  const char id[MAX_ID + 1];
   const uint8_t *command;
   size_t command_len;
   char **argv;
@@ -97,6 +93,7 @@ typedef struct CronJob
   time_t last_exec_time;
   char *last_output;
   size_t last_output_len;
+  int pipefd[2];
 
   struct CronJob *next;
 } CronJob;
@@ -149,6 +146,16 @@ typedef struct CronTab
   CronJob *first_job;
   struct CronTab *next;
 } CronTab;
+
+typedef struct Daemon
+{
+  const char *mail_from;
+  const char *mail_to;
+  bool syslog;
+  int rand_delay;
+
+  CronTab *first_tab;
+} Daemon;
 
 typedef enum
 {
@@ -213,6 +220,13 @@ _free_envptr (const char **envp)
   for (char *e = *envp; e; e++)
     memDeallocSafe (e);
   memDeallocSafe (envp);
+}
+
+static inline void
+_generate_rand_id (char *dest)
+{
+  int id = rand ();
+  sscanf (&dest[0], "%d", id);
 }
 
 #endif
