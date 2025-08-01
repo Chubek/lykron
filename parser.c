@@ -37,7 +37,7 @@ parserLexInteger (const char *fieldptr)
 }
 
 void
-parserParseTimeset (Timeset *ts, const char *fieldptr, int offset)
+parserHandleField (Timeset *ts, const char *fieldptr, TimesetField tsfld)
 {
   char chr = 0;
   while (!isblank (*fieldptr))
@@ -47,13 +47,13 @@ parserParseTimeset (Timeset *ts, const char *fieldptr, int offset)
       if (chr == '*')
         {
           if (LOOKAHEAD (fieldptr) != '/')
-            timesetGlob (ts, offset);
+            timesetDoGlob (ts, tsfld);
           else
             {
               fieldptr++; // skip asterisk
               fieldptr++; // skip slash
               int step = parserLexInteger (fieldptr);
-              timesetStep (ts, -1, step, offset);
+              timesetDoStep (ts, -1, step, tsfld);
             }
         }
       else if (isdigit (chr))
@@ -64,21 +64,36 @@ parserParseTimeset (Timeset *ts, const char *fieldptr, int offset)
             {
               fieldptr++;
               int step = parserLexInteger (fieldptr);
-              timesetStepMins (ts, num, step, offset);
+              timesetDoStep (ts, num, step, tsfld);
             }
           else if (*fieldptr == '-')
             {
               fieldptr++;
               int range = parserLexInteger (fieldptr);
-              timesetRangeMins (ts, num, range, offset);
+              timesetDoRange (ts, num, range, tsfld);
             }
           else
-            timesetIndexMins (ts, num, offset);
+            timesetDoIndex (ts, num, tsfld);
         }
       else if (chr == ',')
         fieldptr++;
 
       fieldptr++;
+    }
+}
+
+void
+parserHandleFields (Timeset *ts, const char *lnptr)
+{
+  static TimesetFiled tsflds[TSFIELD_TimesetField] = {
+    TSFIELD_Mins,  TSFIELD_Hours, TSFIELD_DoM,
+    TSFIELD_Month, TSFIELD_DoW,   TSFIELD_TimesetField,
+  };
+
+  for (size_t i = 0; tsflds[i] != TSFIELD_TimesetField; i++)
+    {
+      SKIP_Whitespace (lnptr);
+      parserHandleField (ts, lnptr, tsflds[i])
     }
 }
 
@@ -115,4 +130,64 @@ parserHandleAssign (Symtbl *stab, const char *lnptr)
 
   memDeallocSafe (key);
   memDeallocSafe (value);
+}
+
+char *
+parserHandleUser (const char *lnptr)
+{
+  // TODO
+}
+
+void
+parserHandleCommand (const char *lnptr, char **cmdptr, size_t *cmdlenptr)
+{
+  // TODO
+}
+
+void
+parserParseTable (CronTab *ct)
+{
+  char *ln = NULL;
+  size_t ln_len = 0;
+  FILE *fstream = fopen (ct->path, "r");
+  if (fstream == NULL)
+    errorOut ("fopen");
+
+  while (getline (&ln, &ln_len, fstream) > 0)
+    {
+      LineKind lnknd = parserAssessLineKind (ln);
+
+      if (lnknd == LINE_None || lnknd == LINE_Comment)
+        continue;
+
+      if (lnknd == LINE_Assign)
+        {
+          parserHandleAssign (ct->stab, lnptr);
+          continue;
+        }
+
+      Timeset curr_ts = { 0 };
+      if (lnknd == LINE_Directive)
+        parserHandleDirective (&curr_ts, lnptr);
+      else if (lnknd == LINE_Field)
+        parserHandleFields (&curr_ts, lnptr);
+
+      char *curr_user = &ct->user[0];
+      if (ct->is_main)
+        curr_user = parserHandleUser (lnptr);
+
+      char *curr_cmd = NULL;
+      size_t curr_cmd_len = 0;
+      parserHandleCommand (lnptr, &curr_cmd, &curr_cmd_len);
+
+      CronJob *curr_cj
+          = cronjobNew (&curr_ts, curr_cmd, curr_cmd_len, curr_user);
+      if (ct->jobs == NULL)
+        ct->jobs = curr_cj;
+      else
+        cronjobListLink (ct->jobs, curr_cj);
+    }
+
+  memDeallocSafe (ln);
+  fclose (fstream);
 }
