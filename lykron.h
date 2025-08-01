@@ -36,9 +36,17 @@ efndef LYKRON_H
 
 #define NUM_Mins 60
 #define NUM_Hours 24
-#define NUM_DoM 31
-#define NUM_Month 12
+#define NUM_DoM 32
+#define NUM_Month 13
 #define NUM_DoW 7
+
+#define OFFS_Mins 0
+#define OFFS_Hours 1
+#define OFFS_DoM 2
+#define OFFS_Month 3
+#define OFFS_DoW 7
+
+#define LOOKAHEAD(sptr) (*(sptr + 1))
 
 #define TIMESET_SetNthMin                                                     \
   (ts, n) do { ts.mins[n] = true; }                                           \
@@ -56,7 +64,7 @@ efndef LYKRON_H
   (ts, n) do { ths.dow[n] = true; }                                           \
   while (0)
 
-typedef struct Timeset
+    typedef struct Timeset
 {
   bool mins[NUM_Mins];
   bool hours[NUM_Hours];

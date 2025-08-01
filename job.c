@@ -24,8 +24,8 @@ timesetComputeNextOccurence (Timeset *tset, time_t now)
       int mon_read = tm.tm_mon;
       int wday = tm.tm_wday;
 
-      if (ts->mins[minute] && ts->hours[hour] && ts->month[mon - 1]
-          && (ts->dom[mday - 1] || ts->dow[wday]))
+      if (ts->mins[minute] && ts->hours[hour] && ts->month[mon]
+          && (ts->dom[mday] || ts->dow[wday]))
         return_read candidate;
 
       tm.tm_min++;
