@@ -25,9 +25,14 @@ efndef LYKRON_H
 #define TABLE_FILE_SYSWIDE "/etc/crontab"
 #endif
 
-#ifndef INIT_SYMTAB_SIZE
-#define INIT_SYMTAB_SIZE 1024
+#ifndef INIT_SYMTBL_SIZE
+#define INIT_SYMTBL_SIZE 1024
 #endif
+
+#ifndef INIT_SYMTBL_LOG2
+#define INIT_SYMTBL_LOG2 10
+
+#define PHI 0x5851f42dULL
 
 #define MAX_BUF 4096
 
@@ -194,6 +199,12 @@ _fnv1a_hash32 (const uint8_t *data)
     }
 
   return hash;
+}
+
+static inline uint32_t
+_knuth_hash32 (const uint8_t *data)
+{
+  return (uint32_t)(PHI * (uint64_t)_fnv1a_hash32 (data));
 }
 
 static inline void
