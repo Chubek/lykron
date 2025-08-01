@@ -19,6 +19,7 @@ symtblNew (void)
   stab->symbols = memAllocBlockSafe (INIT_SYMTBL_SIZE, sizeof (struct Symbol));
   stab->num_symbols = 0;
   stab->max_symbols = INIT_SYMTBL_SIZE;
+  stab->log2 = INIT_SYMTBL_LOG2;
 
   return stab;
 }
@@ -46,13 +47,14 @@ symtblSet (Symtbl *stab, const uint8_t *key, size_t key_len, uint8_t *value,
   if (stab->num_symbols + 1 >= stab->max_symbols)
     {
       size_t old_max_symbols = stab->max_symbols;
-      stab->max_symbols *= 1.5;
+      stab->max_symbols <<= 1;
+      stab->log2 += 1;
       stab->symbols
           = memReallocSafe (stab->symbols, old_max_symbols, stab->max_symbols,
                             sizeof (struct Symbol));
     }
 
-  size_t idx = _fnv1a_hash32 (key) % stab->max_symbols;
+  size_t idx = _knuth_hash32 (key, stab->log2);
   if (stab->symbols[idx].occupied)
     {
       memDeallocSafe (stab->symbols[idx].value);
