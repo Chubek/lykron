@@ -26,59 +26,59 @@ parserAssessLineKind (const char *ln)
 }
 
 int
-parserLexInteger (const char *fieldptr)
+parserLexInteger (const char *lnptr)
 {
   char buf[MAX_INTEGER + 1] = { 0 };
 
-  for (size_t i = 0; i < MAX_INTEGER && isdigit (*fieldptr); i++)
-    buf[i] = *fieldptr++;
+  for (size_t i = 0; i < MAX_INTEGER && isdigit (*lnptr); i++)
+    buf[i] = *lnptr++;
 
   return strtod (&buf[0], NULL);
 }
 
 void
-parserHandleField (Timeset *ts, const char *fieldptr, TimesetField tsfld)
+parserHandleField (Timeset *ts, const char *lnptr, TimesetField tsfld)
 {
   char chr = 0;
-  while (!isblank (*fieldptr))
+  while (!isblank (*lnptr))
     {
-      chr = *fieldptr;
+      chr = *lnptr;
 
       if (chr == '*')
         {
-          if (LOOKAHEAD (fieldptr) != '/')
+          if (LOOKAHEAD (lnptr) != '/')
             timesetDoGlob (ts, tsfld);
           else
             {
-              fieldptr++; // skip asterisk
-              fieldptr++; // skip slash
-              int step = parserLexInteger (fieldptr);
+              lnptr++; // skip asterisk
+              lnptr++; // skip slash
+              int step = parserLexInteger (lnptr);
               timesetDoStep (ts, -1, step, tsfld);
             }
         }
       else if (isdigit (chr))
         {
-          int num = parserLexInteger (fieldptr);
+          int num = parserLexInteger (lnptr);
 
-          if (*fieldptr == '/')
+          if (*lnptr == '/')
             {
-              fieldptr++;
-              int step = parserLexInteger (fieldptr);
+              lnptr++;
+              int step = parserLexInteger (lnptr);
               timesetDoStep (ts, num, step, tsfld);
             }
-          else if (*fieldptr == '-')
+          else if (*lnptr == '-')
             {
-              fieldptr++;
-              int range = parserLexInteger (fieldptr);
+              lnptr++;
+              int range = parserLexInteger (lnptr);
               timesetDoRange (ts, num, range, tsfld);
             }
           else
             timesetDoIndex (ts, num, tsfld);
         }
       else if (chr == ',')
-        fieldptr++;
+        lnptr++;
 
-      fieldptr++;
+      lnptr++;
     }
 }
 
@@ -95,6 +95,31 @@ parserHandleFields (Timeset *ts, const char *lnptr)
       SKIP_Whitespace (lnptr);
       parserHandleField (ts, lnptr, tsflds[i])
     }
+}
+
+void
+parserHandleDirective (Timeset *ts, const char *lnptr)
+{
+  char dir[MAX_DIRECTIVE_LEN + 1] = { 0 };
+  for (size_t i = 0; i < MAX_DIRECTIVE_LEN && !isblank (*lnptr); i++)
+    dir[i] = *lnptr++;
+
+  if (strncmp (dir, "@reboot", MAX_DIRECTIVE_LEN))
+    timesetDoReboot (ts);
+  else if (strncmp (dir, "@yearly", MAX_DIRECTIVE_LEN))
+    timesetDoYearly (ts);
+  else if (strncmp (dir, "@annually", MAX_DIRECTIVE_LEN))
+    timesetDoAnually (ts);
+  else if (strncmp (dir, "@monthly", MAX_DIRECTIVE_LEN))
+    timesetDoMonthly (ts);
+  else if (strncmp (dir, "@weekly", MAX_DIRECTIVE_LEN))
+    timesetDoWeekly (ts);
+  else if (strncmp (dir, "@daily", MAX_DIRECTIVE_LEN))
+    timesetDoDaily (ts);
+  else if (strncmp (dir, "@hourly", MAX_DIRECTIVE_LEN))
+    timesetDoHourly (ts);
+  else
+    raiseError ("Unknown directive");
 }
 
 void
@@ -132,16 +157,20 @@ parserHandleAssign (Symtbl *stab, const char *lnptr)
   memDeallocSafe (value);
 }
 
-char *
-parserHandleUser (const char *lnptr)
+void
+parserHandleUser (const char *lnptr, char *userptr)
 {
-  // TODO
+  SKIP_Whitesace (lnptr);
+  for (size_t i = 0; i < LOGIN_NAME_MAX && !isblank (*lnptr); i++)
+    userptr[i] = *lnptr++;
 }
 
 void
 parserHandleCommand (const char *lnptr, char **cmdptr, size_t *cmdlenptr)
 {
-  // TODO
+  SKIP_Whitespace (lnptr);
+  *cmdlenptr = strlen (lnptr);
+  *cmdptr = strndup (lnptr, *cmdlenptr);
 }
 
 void
@@ -155,6 +184,9 @@ parserParseTable (CronTab *ct)
 
   while (getline (&ln, &ln_len, fstream) > 0)
     {
+      if (!ln_len)
+        continue;
+
       LineKind lnknd = parserAssessLineKind (ln);
 
       if (lnknd == LINE_None || lnknd == LINE_Comment)
@@ -174,7 +206,7 @@ parserParseTable (CronTab *ct)
 
       char *curr_user = &ct->user[0];
       if (ct->is_main)
-        curr_user = parserHandleUser (lnptr);
+        parserHandleUser (lnptr, curr_user);
 
       char *curr_cmd = NULL;
       size_t curr_cmd_len = 0;
