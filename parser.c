@@ -81,3 +81,38 @@ parserParseTimeset (Timeset *ts, const char *fieldptr, int offset)
       fieldptr++;
     }
 }
+
+void
+parserHandleAssign (Symtbl *stab, const char *lnptr)
+{
+  uint8_t *key = NULL;
+  uint8_t *value = NULL;
+  uint8_t *kptr = NULL, *vptr = NULL;
+  size_t key_len, val_len;
+  wordexp_t wxp;
+
+  for (kptr = lnptr; *kptr != '='; kptr++)
+    ;
+  key_len = (size_t)(kptr - lnptr);
+
+  for (vptr = ++kptr; *vptr; vptr++)
+    ;
+  val_len = (size_t)(vptr - kptr);
+
+  key = memAllocBlockSafe (key_len + 1, sizeof (uint8_t));
+  value = memAllocBlockSafe (val_len + 1, sizeof (uint8_t));
+
+  strncpy (name, lnptr, key_len);
+  strncpy (value, &lnptr[key_len + 1], val_len);
+
+  wordexp (value, &wxp, 0);
+  memDeallocSafe (value);
+  val_len = strlen (*wxp.we_wordv);
+  value = (uint8_t *)strndup (*wxp.we_wordv, val_len);
+  wordfree (&wxp);
+
+  symtblSet (stab, key, key_len, value, value_len);
+
+  memDeallocSafe (key);
+  memDeallocSafe (value);
+}
