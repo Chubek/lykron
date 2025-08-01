@@ -65,6 +65,10 @@ cronjobListDelete (CronJob *cj)
 
   CronJob *next = cj->next;
 
+  for (size_t i = 0; i < cj->argc; i++)
+    memDeallocSafe (cj->argv[i]);
+
+  memDeallocSafe (cj->argv);
   memDeallocSafe (cj->command);
   memDeallocSafe (cj);
 
@@ -121,4 +125,26 @@ cronjobScheduleInit (Scheduler *sched, CronJob *cj)
   EventNotice *evt = noticeNew (next_time, cj);
   time_t delay = next_time - sched->lower_bound;
   schedulerHold (sched, evt, delay);
+}
+
+void
+cronjobPrepCommand (CronJob *cj)
+{
+  char *cmddup = strndup (cj->command, cj->command_len);
+  char *subtok = strtok (cmddup, "\t ");
+  size_t max_argc = ARGC_DFL;
+  cj->argv = memAllocBlockSafe (ARGC_DFL, sizeof (char *));
+  while (subtok != NULL)
+    {
+      if (cj->argc + 1 >= max_argc)
+        {
+          size_t old_max_argc = max_argc;
+          max_argc += ARGC_DFL;
+          cj->argv
+              = memReallocSafe (cj->argv, old_max_argc, argc, sizeof (char *));
+        }
+      cj->argv[cj->argc++] = strdup (subtok);
+      subtok = strtok (NULL, "\t ");
+    }
+  memDeallocSafe (cmddup);
 }
