@@ -40,13 +40,15 @@ efndef LYKRON_H
 #define NUM_Month 13
 #define NUM_DoW 7
 
-#define OFFS_Mins 0
-#define OFFS_Hours 1
-#define OFFS_DoM 2
-#define OFFS_Month 3
-#define OFFS_DoW 7
-
 #define LOOKAHEAD(sptr) (*(sptr + 1))
+
+#define SKIP_Whitespace(ptr)                                                  \
+  do                                                                          \
+    {                                                                         \
+      while (isblank (*ptr))                                                  \
+        ptr++;                                                                \
+    }                                                                         \
+  while (0)
 
 #define TIMESET_SetNthMin                                                     \
   (ts, n) do { ts.mins[n] = true; }                                           \
@@ -136,7 +138,6 @@ typedef struct CronTab
   const char path[PATH_MAX + 1];
   const char user[LOGIN_NAME_MAX + 1];
   time_t mtime;
-  FILE *stream;
 
   Symtbl *stab;
   Scheduler *sched;
@@ -152,6 +153,16 @@ typedef enum
   LINE_Field,
   LINE_None,
 } LineKind;
+
+typedef enum
+{
+  TSFIELD_Mins = 0,
+  TSFIELD_Hours = 1,
+  TSFIELD_DoM = 2,
+  TSFIELD_Month = 3,
+  TSFIELD_DoW = 4,
+  TSFIELD_TimesetField = 5,
+} TimesetField;
 
 static const char *TABLE_DIRS[] = {
   "/etc/cron.d/",
