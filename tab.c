@@ -40,7 +40,8 @@ symtblDelete (Symtbl *stab)
 }
 
 void
-symtblSet (Symtbl *stab, const uint8_t *key, uint8_t *value)
+symtblSet (Symtbl *stab, const uint8_t *key, size_t key_len, uint8_t *value,
+           size_t value_len)
 {
   if (stab->num_symbols + 1 >= stab->max_symbols)
     {
@@ -55,12 +56,12 @@ symtblSet (Symtbl *stab, const uint8_t *key, uint8_t *value)
   if (stab->symbols[idx].occupied)
     {
       memDeallocSafe (stab->symbols[idx].value);
-      stab->symbols[idx].value = strdup (value);
+      stab->symbols[idx].value = strndup (value, value_len);
     }
   else
     {
-      stab->symbols[idx].key = strdup (key);
-      stab->symbols[idx].value = strdup (value);
+      stab->symbols[idx].key = strndup (key, key_len);
+      stab->symbols[idx].value = strndup (value, value_len);
       stab->symbols[idx].occupied = true;
       stab->num_symbols++;
     }
@@ -244,4 +245,18 @@ crontabReload (CronTab *ctlst, const char *path_key)
 CronTab *
 crontabLoadFromFile (const char *path, bool is_main)
 {
+  char user[LOGIN_NAME_MAX + 1] = { 0 }, *userp = NULL;
+  CronTab *ct = NULL;
+
+  if (!is_main)
+    {
+      if (gethostname (&user[0], LOGIN_NAME_MAX) < 0)
+        errorOut ("gethostname");
+      userp = &user[0];
+    }
+
+  ct = crontabNew (path, userp, is_main);
+  parserParseTable (ct);
+
+  return ct;
 }

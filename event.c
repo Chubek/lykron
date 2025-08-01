@@ -219,7 +219,7 @@ schedulerExecuteLoop (Scheduler *sched)
 
           time_t next_time
               = timesetComputeNextOccurence (&evt->job->timeset, now + 60);
-          if (next_time != (time_t)TIME_UNSPEC)
+          if (next_time != TIME_UNSPEC)
             {
               evt->time = next_time;
               schedulerHold (sched, evt, next_time - sched->lower_bound);
@@ -253,7 +253,7 @@ schedulerExecuteLoop (Scheduler *sched)
 
                   time_t next_time = timesetComputeNextOccurence (
                       &evt->job->timeset, now + 60);
-                  if (next_time != (time_t)TIME_UNSPEC)
+                  if (next_time != TIME_UNSPEC)
                     {
                       evt->time = next_time;
                       schedulerHold (sched, evt, next_time - sched->lower_bound);

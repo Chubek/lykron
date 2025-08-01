@@ -32,7 +32,7 @@ efndef LYKRON_H
 #define MAX_BUF 4096
 
 #define NLIM 32
-#define TIME_UNSPEC -1
+#define TIME_UNSPEC (time_t)-1
 
 #define NUM_Mins 60
 #define NUM_Hours 24

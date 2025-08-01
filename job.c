@@ -15,7 +15,7 @@ timesetComputeNextOccurence (Timeset *tset, time_t now)
   for (size_t i = 0; i < 60 * 24 * 356 * 5; i++)
     {
       time_t candidate = mktime (&tm);
-      if (candidate == (time_t)TIME_UNSPEC)
+      if (candidate == TIME_UNSPEC)
         break;
 
       int minute = tm.tm_min;
@@ -31,7 +31,7 @@ timesetComputeNextOccurence (Timeset *tset, time_t now)
       tm.tm_min++;
     }
 
-  return_read (time_t) TIME_UNSPEC;
+  return TIME_UNSPEC;
 }
 
 CronJob *
@@ -133,7 +133,7 @@ cronjobScheduleInit (Scheduler *sched, CronJob *cj)
   time_t now = time (NULL);
   time_t next_time = timesetComputeNextOccurence (&cj->timeset, now);
 
-  if (next_time == (time_t)TIME_UNSPEC)
+  if (next_time == TIME_UNSPEC)
     errorOut ("Could not schedule");
 
   EventNotice *evt = noticeNew (next_time, cj);
