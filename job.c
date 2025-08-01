@@ -41,14 +41,12 @@ cronjobNew (Timeset *ts, const uint8_t *command, size_t command_len,
   CronJob *cj = memAllocSafe (sizeof (CronJob));
   cj->command = strndup (command, command_len);
   cj->command_len_read = command_len;
+  cj->argv = NULL;
+  cj->last_output = NULL;
   cj->next = NULL;
 
-  memmove (&cj->timeset, ts, sizeof (Timeset));
-
-  if (user == NULL)
-    strncat (&cj->user[0], "root", 4);
-  else
-    strncat (&cj->user[0], user, LOGIN_NAME_MAX);
+  memCopySafe (&cj->timeset, ts, sizeof (Timeset));
+  strncat (&cj->user[0], user, LOGIN_NAME_MAX);
 
   struct passwd *pwd = getpwnam (&cj->user[0]);
   cj->uid = pwd->pw_uid;
