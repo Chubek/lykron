@@ -45,6 +45,8 @@ cronjobNew (Timeset *ts, const uint8_t *command, size_t command_len,
   cj->last_output = NULL;
   cj->next = NULL;
 
+  _generate_rand_id (&cj->id[0]);
+
   memCopySafe (&cj->timeset, ts, sizeof (Timeset));
   strncat (&cj->user[0], user, LOGIN_NAME_MAX);
 
@@ -79,16 +81,15 @@ cronjobListLink (CronJob *hcj, CronJob *ncj)
 }
 
 void
-cronjobExecute (CronJob *cj, char *const envp[])
+cronjobExecute (CronJob *cj, char **envptr)
 {
-  int pipfd[2];
+  if (pipe (cj->pipefd) < 0)
+    errorOut ("pipe");
+  if ((cj->pid = fork ()) < 0)
+    errorOut ("fork");
   if (cj->argv == NULL)
     cronjobPrepCommand (cj);
 
-  if (pipe (pipfd) < 0)
-    errorOut ("pipe");
-
-  cj->pid = fork ();
   if (cj->pid == 0)
     {
       if (setuid (cj->uid) < 0)
@@ -96,35 +97,16 @@ cronjobExecute (CronJob *cj, char *const envp[])
       if (setgid (cj->gid) < 0)
         errorOut ("setgid");
 
-      close (pipfd[0]);
-      dup2 (pipfd[1], STDOUT_FILENO);
-      dup2 (pipfd[1], STDERR_FILENO);
-      close (pipfd[1]);
+      close (cj->pipefd[0]);
+      dup2 (cj->pipefd[1], STDOUT_FILENO);
+      dup2 (cj->pipefd[1], STDERR_FILENO);
+      close (cj->pipefd[1]);
 
-      execvpe (cj->argv[0], cj->argv[1], envp);
+      execvpe (cj->argv[0], &cj->argv[1], envptr);
       _exit (EXIT_FAILURE);
     }
-  else if (cj->pid < 0)
-    errorOut ("fork");
 
-  close (pipfd[1]);
-
-  char buf[MAX_BUF] = { 0 };
-  ssize_t n_read = 0;
-  size_t total_read = 0;
-
-  while ((n_read = read (pipfid[0], buf, sizeof (buf))) > 0)
-    {
-      cj->last_output = memReallocSafe (
-          cj->last_output, total_read + n_read + 1, sizeof (char));
-      cj->last_output
-          = memCopyAtOffsetSafe (cj->last_output, buffer, total_read, n_read);
-      total_read += n_read;
-    }
-  cj->last_output_len = total_read;
-
-  waitpid (cj->pid, &cj->last_exit_status);
-  cj->last_exec_time = time (NULL);
+  cronjobSerializeMetadata (cj);
 }
 
 void
