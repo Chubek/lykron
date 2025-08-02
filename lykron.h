@@ -37,6 +37,14 @@
 #define INIT_SYMTBL_LOG2 10
 #endif
 
+#ifndef INIT_INTERVAL_WIDTH
+#define INIT_INTERVAL_WIDTH 16
+#endif
+
+#ifndef INIT_NUM_BUCKETS
+#define INIT_NUM_BUCKETS 128
+#endif
+
 #define PHI 0x5851f42dULL
 
 #define MAX_BUF 4096
