@@ -14,14 +14,15 @@
 #include "lykron.h"
 
 Scheduler *
-schedulerNew (time_t interval_width, size_t num_buckets)
+schedulerNew (void)
 {
   Scheduler *sched = memAllocSafe (sizeof (Scheduler));
-  sched->buckets = memAllocBlockSafe (num_buckets + 1, sizeof (EventBucket));
-  sched->num_buckets = num_buckets;
+  sched->buckets
+      = memAllocBlockSafe (INIT_NUM_BUCKETS + 1, sizeof (EventBucket));
+  sched->num_buckets = INIT_NUM_BUCKETS;
   sched->curr_bucket = 0;
   sched->lower_bound = 0;
-  sched->interval_width = interval_width;
+  sched->interval_width = INIT_INTERVAL_WIDTH;
 
   for (size_t i = 0; i < sched->num_buckets + 1; i++)
     {
@@ -256,7 +257,8 @@ schedulerExecuteLoop (Scheduler *sched)
                   if (next_time != TIME_UNSPEC)
                     {
                       evt->time = next_time;
-                      schedulerHold (sched, evt, next_time - sched->lower_bound);
+                      schedulerHold (sched, evt,
+                                     next_time - sched->lower_bound);
                     }
 
                   break;
