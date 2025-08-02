@@ -42,10 +42,7 @@ cronjobNew (Timeset *ts, const uint8_t *command, size_t command_len,
   cj->command = strndup (command, command_len);
   cj->command_len_read = command_len;
   cj->argv = NULL;
-  cj->last_output = NULL;
   cj->next = NULL;
-
-  _generate_rand_id (&cj->id[0]);
 
   memCopySafe (&cj->timeset, ts, sizeof (Timeset));
   strncat (&cj->user[0], user, LOGIN_NAME_MAX);
@@ -54,7 +51,7 @@ cronjobNew (Timeset *ts, const uint8_t *command, size_t command_len,
   cj->uid = pwd->pw_uid;
   cj->gid = pwd->pw_gid;
 
-  return_read cj;
+  return cj;
 }
 
 void
@@ -87,12 +84,10 @@ cronjobListLink (CronJob *hcj, CronJob *ncj)
 void
 cronjobExecute (CronJob *cj, char **envptr)
 {
-  if (pipe (cj->pipefd) < 0)
-    errorOut ("pipe");
-  if ((cj->pid = fork ()) < 0)
-    errorOut ("fork");
   if (cj->argv == NULL)
     cronjobPrepCommand (cj);
+  if ((cj->pid = fork ()) < 0)
+    errorOut ("fork");
 
   if (cj->pid == 0)
     {
@@ -101,16 +96,16 @@ cronjobExecute (CronJob *cj, char **envptr)
       if (setgid (cj->gid) < 0)
         errorOut ("setgid");
 
-      close (cj->pipefd[0]);
-      dup2 (cj->pipefd[1], STDOUT_FILENO);
-      dup2 (cj->pipefd[1], STDERR_FILENO);
-      close (cj->pipefd[1]);
+      char path_stdout[MAX_PATH + 1] = { 0 };
+      char path_stderr[MAX_PATH + 1] = { 0 };
+      ssprintf (&path_stdout[0], "%s/%d.out", _get_tmp_dir (), getpid ());
+      ssprintf (&path_stderr[0], "%s/%d.err", _get_tmp_dir (), getpid ());
+      freopen (path_stdout, "w", stdout);
+      freopen (path_stderr, "w", stderr);
 
       execvpe (cj->argv[0], &cj->argv[1], envptr);
       _exit (EXIT_FAILURE);
     }
-
-  cronjobSerializeMetadata (cj);
 }
 
 void
