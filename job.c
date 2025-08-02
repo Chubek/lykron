@@ -111,6 +111,9 @@ cronjobExecute (CronJob *cj, char **envptr)
 void
 cronjobScheduleInit (Scheduler *sched, CronJob *cj)
 {
+  if (cj == NULL)
+    return;
+
   time_t now = time (NULL);
   time_t next_time = timesetComputeNextOccurence (&cj->timeset, now);
 
@@ -120,6 +123,8 @@ cronjobScheduleInit (Scheduler *sched, CronJob *cj)
   EventNotice *evt = noticeNew (next_time, cj);
   time_t delay = next_time - sched->lower_bound;
   schedulerHold (sched, evt, delay);
+
+  cronjobScheduleInit (sched, cj->next);
 }
 
 void
