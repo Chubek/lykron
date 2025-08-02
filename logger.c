@@ -15,7 +15,7 @@
 #include "lykron.h"
 
 void
-daemonReapChildren (Deamon *dmn)
+loggerReapChildren (Logger *lgr)
 {
   int sfd = 0;
   ssize_t slen = 0;
@@ -48,7 +48,7 @@ daemonReapChildren (Deamon *dmn)
               pid_t reaped_pid = fdsi.ssi_pid;
               int reaped_exit_stat = fdsi.ssi_status;
 
-              loggerLogReapedChild (&dmn->loggr, reaped_pid, reaped_exit_stat);
+              loggerLogReapedChild (lgr, reaped_pid, reaped_exit_stat);
             }
         }
     }
@@ -67,9 +67,7 @@ loggerLogReapedChild (Logger *lgr, pid_t reaped_pid, reaped_exit_stat)
   FILE *outtmp = fopen (path_stdout, "r");
   FILE *errtmp = fopen (path_stderr, "r");
 
-  if (outtmp == NULL)
-    errorOut ("fopen");
-  if (errtmp == NULL)
+  if (outtmp == NULL || errtmp == NULL)
     errorOut ("fopen");
 
   char *logln = NULL;
