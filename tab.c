@@ -109,7 +109,8 @@ crontabNew (const char *path, const char *user, bool is_main)
   ct->user = strndup (&ct->user[0], user, LOGIN_NAME_MAX);
   ct->first_job = NULL;
   ct->is_main = is_main;
-  ct->sched = NULL;
+  ct->sched = schedulerNew ();
+  ct->logger = loggerNew ();
   ct->stab = symtblNew ();
   ct->next = NULL;
 
@@ -127,8 +128,10 @@ crontabListDelete (CronTab *ct)
     return;
 
   CronTab *next = ct->next;
+  schedulerDelete (ct->scheduler);
+  loggerDelete (ct->logger);
+  cronjobListDelete (ct->first_job);
   memDeallocSafe (ct);
-
   crontabListDelete (next);
 }
 
