@@ -25,10 +25,6 @@
 #define TABLE_FILE_SYSWIDE "/etc/crontab"
 #endif
 
-#ifndef JOBS_CACHE_DIR
-#define JOBS_CACHE_DIR "/run/lykron/cache/"
-#endif
-
 #ifndef CROND_PID_FILE
 #define CROND_PID_FILE "/run/lykron.pid"
 #endif
@@ -78,7 +74,6 @@ typedef struct Timeset
 typedef struct CronJob
 {
   Timeset timeset;
-  const char id[MAX_ID + 1];
   const uint8_t *command;
   size_t command_len;
   char **argv;
@@ -88,12 +83,6 @@ typedef struct CronJob
   uid_t uid;
   gid_t gid;
   pid_t pid;
-
-  int last_exit_status;
-  time_t last_exec_time;
-  char *last_output;
-  size_t last_output_len;
-  int pipefd[2];
 
   struct CronJob *next;
 } CronJob;
@@ -147,13 +136,16 @@ typedef struct CronTab
   struct CronTab *next;
 } CronTab;
 
-typedef struct Daemon
+typedef struct Logger
 {
   const char *mail_from;
   const char *mail_to;
   bool syslog;
-  int rand_delay;
+} Logger;
 
+typedef struct Daemon
+{
+  Logger logger;
   CronTab *first_tab;
 } Daemon;
 
@@ -222,11 +214,13 @@ _free_envptr (const char **envp)
   memDeallocSafe (envp);
 }
 
-static inline void
-_generate_rand_id (char *dest)
+static inline char *
+_get_tmp_dir (void)
 {
-  int id = rand ();
-  sscanf (&dest[0], "%d", id);
+  const char *tmpdir = getenv ("TMPDIR");
+  if (tmpdir == NULL)
+    tmpdir = P_tmpdir;
+  return tmpdir;
 }
 
 #endif
