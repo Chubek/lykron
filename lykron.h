@@ -124,6 +124,13 @@ typedef struct Scheduler
   time_t interval_width;
 } Scheduler;
 
+typedef struct Logger
+{
+  const char *mail_from;
+  const char *mail_to;
+  bool syslog;
+} Logger;
+
 typedef struct CronTab
 {
   const char path[PATH_MAX + 1];
@@ -132,22 +139,10 @@ typedef struct CronTab
 
   Symtbl *stab;
   Scheduler *sched;
+  Logger *logger;
   CronJob *first_job;
   struct CronTab *next;
 } CronTab;
-
-typedef struct Logger
-{
-  const char *mail_from;
-  const char *mail_to;
-  bool syslog;
-} Logger;
-
-typedef struct Daemon
-{
-  Logger logger;
-  CronTab *first_tab;
-} Daemon;
 
 typedef enum
 {
