@@ -63,11 +63,11 @@
 
 #define LOOKAHEAD(sptr) (*(sptr + 1))
 
-#define SKIP_Whitespace(ptr)                                                  \
+#define SKIP_Whitespace(sptr)                                                 \
   do                                                                          \
     {                                                                         \
-      while (isblank (*ptr))                                                  \
-        ptr++;                                                                \
+      while (isblank (*sptr))                                                 \
+        sptr++;                                                               \
     }                                                                         \
   while (0)
 
