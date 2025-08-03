@@ -23,7 +23,7 @@
 #endif
 
 #ifndef TABLE_FILE_SYSWIDE
-#define TABLE_FILE_SYSWIDE "/etc/crontab"
+#define TABLE_FILE_SYSWIDE "/etc/lykrontab"
 #endif
 
 #ifndef CROND_PID_FILE
@@ -174,8 +174,8 @@ typedef enum
 } TimesetField;
 
 static const char *TABLE_DIRS[] = {
-  "/etc/cron.d/",
-  "/var/spool/cron/",
+  "/etc/lykron.d/",
+  "/var/spool/lykron/",
   TABLE_DIRS_ADDITIONAL,
   NULL,
 };
