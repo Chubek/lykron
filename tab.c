@@ -196,7 +196,7 @@ crontabWatchInotify (CronTab *ctlst)
       if (n_read < 0)
         errorOut ("read");
 
-      for (char *ptr = &buf[0], ptr < buf + n_read;)
+      for (char *ptr = &buf[0]; ptr < buf + n_read;)
         {
           struct inotify_event *evt = (struct inotify_event *)ptr;
 
