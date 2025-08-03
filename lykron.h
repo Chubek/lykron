@@ -229,9 +229,44 @@ _get_tmp_dir (void)
 }
 
 static inline void
+_write_pid_file (void)
+{
+  FILE *fstream = fopen (CROND_PID_FILE, "w");
+  if (fstream == NULL)
+    {
+      perror ("fopen");
+      exit (EXIT_FAILURE);
+    }
+  fprintf (fstream, "%d\n", getpid ());
+  fclose (fstream);
+}
+
+static inline pid_t
+_get_pid_from_file (void)
+{
+  FILE *fstream = fopen (CROND_PID_FILE, "r");
+  if (fstream == NULL)
+    {
+      perror ("fopen");
+      exit (EXIT_FAILURE);
+    }
+  pid_t pid = 0;
+  sscanf (fstream, "%d", &pid);
+  fclose (fstream);
+  return pid;
+}
+
+static inline void
+_delete_pid_file (void)
+{
+  unlink (CROND_PID_FILE);
+}
+
+static inline void
 _err_out (const char *msg)
 {
   perror (msg);
+  _delete_pid_file ();
   exit (EXIT_FAILURE);
 }
 
