@@ -34,8 +34,31 @@ timesetComputeNextOccurence (Timeset *ts, time_t now)
   return TIME_UNSPEC;
 }
 
+bool *
+timesetGetFieldOffset (Timeset *ts, TimesetField field)
+{
+  switch (field)
+    {
+    case TSFIELD_Mins:
+      return &ts->mins[0];
+    case TSFIELD_Hours:
+      return &ts->hours[0];
+    case TSFIELD_DoM:
+      return &ts->dom[0];
+    case TSFIELD_Month:
+      return &ts->month[0];
+    case TSFIELD_DoW:
+      return &ts->dow[0];
+    default:
+      return NULL;
+    }
+}
 void
-timesetDoGlob (Timeset 
+timesetDoGlob (Timeset *ts, TimesetField field)
+{
+  memset (timesetGetFieldOffset (ts, field), true,
+          TSFIELD_NUMS_LUT[field] * sizeof (bool));
+}
 
 CronJob *
 cronjobNew (Timeset *ts, const uint8_t *command, size_t command_len,
