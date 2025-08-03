@@ -72,6 +72,11 @@
     }                                                                         \
   while (0)
 
+#define MARK_UpperBit (tok) (tok | 0x80000000)
+#define MARK_UpperBitIsSet (tok) (tok & 0x80000000)
+#define STEP_GetLower (tok) (tok & 0x000000FF)
+#define STEP_GetHigher (tok) ((tok & 0x0000FF00) >> 8)
+
 typedef struct Timeset
 {
   bool mins[NUM_Mins];
