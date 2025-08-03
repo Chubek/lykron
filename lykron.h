@@ -3,6 +3,7 @@
 
 #define _POSIX_SOURCE
 #define _POSIX_C_SOURCE
+#include <errno.h>
 #include <limits.h>
 #include <pwd.h>
 #include <signal.h>
@@ -225,6 +226,13 @@ _get_tmp_dir (void)
   if (tmpdir == NULL)
     tmpdir = P_tmpdir;
   return tmpdir;
+}
+
+static inline void
+_err_out (const char *msg)
+{
+  perror (msg);
+  exit (EXIT_FAILURE);
 }
 
 #endif
