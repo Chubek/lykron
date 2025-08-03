@@ -29,7 +29,7 @@ loggerReapChildren (Logger *lgr)
   sigaddset (&mask, SIGQUIT);
 
   if (sigprocmask (SIG_BLOCK, &mask, NULL) < 0)
-    errorOut ("sigprocmask");
+    _err_out ("sigprocmask");
 
   if ((sfd = signalfd (-1, &mask, 0)) < 0)
     errrorOut ("signalfd");
@@ -41,7 +41,7 @@ loggerReapChildren (Logger *lgr)
         {
           memset (&fdsi, 0, sizeof (fdsi));
           if (read (sfd, &fdsi, sizeof (fdsi)) < 0)
-            errorOut ("read");
+            _err_out ("read");
 
           if (fdsi.ssi_signo == SIGCHLD)
             {
@@ -68,7 +68,7 @@ loggerLogReapedChild (Logger *lgr, pid_t reaped_pid, reaped_exit_stat)
   FILE *errtmp = fopen (path_stderr, "r");
 
   if (outtmp == NULL || errtmp == NULL)
-    errorOut ("fopen");
+    _err_out ("fopen");
 
   char *logln = NULL;
   size_t logln_len = 0;

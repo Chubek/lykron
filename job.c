@@ -87,14 +87,14 @@ cronjobExecute (CronJob *cj, char **envptr)
   if (cj->argv == NULL)
     cronjobPrepCommand (cj);
   if ((cj->pid = fork ()) < 0)
-    errorOut ("fork");
+    _err_out ("fork");
 
   if (cj->pid == 0)
     {
       if (setuid (cj->uid) < 0)
-        errorOut ("setuid");
+        _err_out ("setuid");
       if (setgid (cj->gid) < 0)
-        errorOut ("setgid");
+        _err_out ("setgid");
 
       char path_stdout[MAX_PATH + 1] = { 0 };
       char path_stderr[MAX_PATH + 1] = { 0 };
@@ -118,7 +118,7 @@ cronjobScheduleInit (Scheduler *sched, CronJob *cj)
   time_t next_time = timesetComputeNextOccurence (&cj->timeset, now);
 
   if (next_time == TIME_UNSPEC)
-    errorOut ("Could not schedule");
+    _err_out ("Could not schedule");
 
   EventNotice *evt = noticeNew (next_time, cj);
   time_t delay = next_time - sched->lower_bound;

@@ -180,7 +180,7 @@ parserParseTable (CronTab *ct)
   size_t ln_len = 0;
   FILE *fstream = fopen (ct->path, "r");
   if (fstream == NULL)
-    errorOut ("fopen");
+    _err_out ("fopen");
 
   while (getline (&ln, &ln_len, fstream) > 0)
     {

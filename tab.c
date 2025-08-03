@@ -116,7 +116,7 @@ crontabNew (const char *path, const char *user, bool is_main)
 
   struct stat st = { 0 };
   if (stat (&ct->path[0], &st) < 0)
-    errorOut ("stat");
+    _err_out ("stat");
 
   ct->mtime = st.st_mtim.tv_sec;
 }
@@ -149,7 +149,7 @@ crontabIsModifiedMtime (CronTab *ct)
 {
   struct stat st;
   if (stat (&ct->path[0], &st) < 0)
-    errorOut ("stat");
+    _err_out ("stat");
 
   if (ct->mtime < st.st_mtim.tv_sec)
     {
@@ -175,7 +175,7 @@ crontabWatchInotify (CronTab *ctlst)
   struct pollfd pfd;
   int inotfd = inotify_init1 (IN_NONBLOCK);
   if (inotfd < 0)
-    errorOut ("inotify_init");
+    _err_out ("inotify_init");
 
   for (size_t i = 0; TABLE_DIRS[i] != NULL; i++)
     wd = inotify_add_watch (inotfd, TABLE_DIRS[i],
@@ -183,7 +183,7 @@ crontabWatchInotify (CronTab *ctlst)
                                 | IN_MOVED_TO);
 
   if (wd < 0)
-    errorOut ("inotify_add_watch");
+    _err_out ("inotify_add_watch");
 
   pfd = (struct pollfd){
     .fd = inotfd,
@@ -194,7 +194,7 @@ crontabWatchInotify (CronTab *ctlst)
       char buf[MAX_BUF] = { 0 };
       ssize_t n_read = read (inotfd, buf, sizeof (buf));
       if (n_read < 0)
-        errorOut ("read");
+        _err_out ("read");
 
       for (char *ptr = &buf[0]; ptr < buf + n_read;)
         {
@@ -219,7 +219,7 @@ crontabLoadAll (void)
       path = TABLE_DIRS[i];
       DIR *dir = opendir (path);
       if (dir == NULL)
-        errorOut ("opendir");
+        _err_out ("opendir");
 
       struct dirent *entry;
       while ((entry = readdir (dir)) != NULL)
@@ -256,7 +256,7 @@ crontabLoadFromFile (const char *path, bool is_main)
   if (!is_main)
     {
       if (gethostname (&user[0], LOGIN_NAME_MAX) < 0)
-        errorOut ("gethostname");
+        _err_out ("gethostname");
       userp = &user[0];
     }
 
