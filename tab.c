@@ -153,7 +153,7 @@ crontabIsModifiedMtime (CronTab *ct)
 
   if (ct->mtime < st.st_mtim.tv_sec)
     {
-      ct - mtime = st.st_mtim.tv_sec;
+      ct->mtime = st.st_mtim.tv_sec;
       return true;
     }
 
