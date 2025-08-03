@@ -38,17 +38,18 @@
 #endif
 
 #ifndef INIT_INTERVAL_WIDTH
-#define INIT_INTERVAL_WIDTH 16
+#define INIT_INTERVAL_WIDTH 86400
 #endif
 
 #ifndef INIT_NUM_BUCKETS
-#define INIT_NUM_BUCKETS 128
+#define INIT_NUM_BUCKETS 1825
 #endif
 
 #define PHI 0x5851f42dULL
 
 #define MAX_BUF 4096
 #define MAX_ID 16
+#define MAX_INTEGER 24
 #define ARGC_DFL 32
 
 #define NLIM 32
