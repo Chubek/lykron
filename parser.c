@@ -26,90 +26,73 @@ parserAssessLineKind (const char *ln)
 }
 
 int
-parserLexInteger (const char *lnptr)
+parserLexNumeric (const char **lnptr)
 {
   char buf[MAX_INTEGER + 1] = { 0 };
 
-  for (size_t i = 0; i < MAX_INTEGER && isdigit (*lnptr); i++)
-    buf[i] = *lnptr++;
+  for (size_t i = 0; i < MAX_INTEGER && isdigit (**lnptr); i++)
+    buf[i] = **lnptr++;
 
   return strtod (&buf[0], NULL);
 }
 
-char *
-parserSubstituteSymbolicNames (const char *lnptr)
+int
+parsrLexSymbolic (const char **lnptr)
 {
   // TODO
+}
+
+int
+parserLexToken (const char **lnptr)
+{
+  if (isdigit (*lnptr))
+    return parserLexNumeric (lnptr);
+  else
+    return parserLexSymbolic (lnptr);
 }
 
 void
 parserHandleField (Timeset *ts, const char *lnptr, TimesetField tsfld)
 {
-  lnptr = parserSubstituteSymbolicNames (lnptr);
-  char chr = 0;
   while (!isblank (*lnptr))
     {
-      chr = *lnptr;
+      char chr = *lnptr;
 
       if (chr == '*')
         {
-          if (LOOKAHEAD (lnptr) != '/')
-            timesetDoGlob (ts, tsfld);
+          if (LOOKAHEAD (lnptr) == '/')
+            {
+              lnptr++;
+              int tok = parserLexToken (&lnptr);
+              timesetDoGlob (ts, tok, tsfld);
+            }
           else
-            {
-              lnptr++; // skip asterisk
-              lnptr++; // skip slash
-              int step = parserLexInteger (lnptr);
-              timesetDoStep (ts, -1, step, tsfld);
-            }
+            timesetDoGlob (ts, -1, tsfld);
         }
-      else if (isdigit (chr))
+      else if (isalpha (lnptr) || isdigit (lnptr))
         {
-          int num = parserLexInteger (lnptr);
-
-          if (*lnptr == '/')
+          int toklst[NUM_Mins + 1] = { -1 };
+          size_t lstlen = 0;
+          while (true)
             {
-              lnptr++;
-              int step = parserLexInteger (lnptr);
-              timesetDoStep (ts, num, step, tsfld);
-            }
-          else if (*lnptr == '-')
-            {
-              lnptr++;
-              int range = parserLexInteger (lnptr);
-              if (*lnptr == '/')
-                {
-                  lnptr++; // skip slash
-                  int step = parserLexInteger (lnptr);
-                  timestepDoRangeStep (ts, num, range, step, tsfld);
-                }
-              else
-                timestepDoRange (ts, num, range, tsfld);
-            }
-          else if (*lnptr == ',')
-            {
-              int numlst[NUM_Mins + 1] = { -1 };
-              size_t lstn = 0;
-              while (true)
-                {
-                  lnptr++; // skip comma
-                  numlst[lstn++] = parserLexInteger (lnptr);
-                  if (*lnptr != ',')
-                    break;
-                }
-              if (*lnptr == '/')
+              int tok = parserLexToken (&lnptr);
+              if (*lnptr == '-')
                 {
                   lnptr++;
-                  int step = parserLexInteger (lnptr);
-                  timesetDoListStep (ts, &numlst[0], lstn, step, tsfld);
+                  tok |= parserLexToken (&lnptr) << 8;
+                  MARK_UpperBit (tok);
+                }
+              toklst[lstlen++] = tok;
+              if (*lnptr == ',')
+                {
+                  lnptr++;
+                  continue;
                 }
               else
-                timesetDoList (ts, &numlst[0], lstn, tsfld);
+                break;
             }
-          else
-            timesetDoIndex (ts, num, tsfld);
+          timesetDoList (ts, &toklst[0], lstlen, tsfld);
         }
-
       lnptr++;
     }
 }
