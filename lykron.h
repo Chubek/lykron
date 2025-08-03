@@ -173,6 +173,12 @@ typedef enum
   TSFIELD_TimesetField = 5,
 } TimesetField;
 
+static const int TSFIELD_NUMS_LUT[TimesetField] = {
+  [TSFIELD_Mins] = NUM_Mins, [TSFIELD_Hours] = NUM_Hours,
+  [TSFIELD_DoM] = NUM_DoM,   [TSFIELD_Month] = NUM_Month,
+  [TSFIELD_DoW] = NUM_DoW,   [TSFIELD_TimesetField] = -1,
+};
+
 static const char *TABLE_DIRS[] = {
   "/etc/lykron.d/",
   "/var/spool/lykron/",
