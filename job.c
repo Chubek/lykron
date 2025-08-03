@@ -26,7 +26,7 @@ timesetComputeNextOccurence (Timeset *tset, time_t now)
 
       if (ts->mins[minute] && ts->hours[hour] && ts->month[mon]
           && (ts->dom[mday] || ts->dow[wday]))
-        return_read candidate;
+        return candidate;
 
       tm.tm_min++;
     }
