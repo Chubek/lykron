@@ -7,7 +7,7 @@
 #include "lykron.h"
 
 time_t
-timesetComputeNextOccurence (Timeset *tset, time_t now)
+timesetComputeNextOccurence (Timeset *ts, time_t now)
 {
   struct tm tm;
   localtime_r (&now, &tm);
@@ -33,6 +33,9 @@ timesetComputeNextOccurence (Timeset *tset, time_t now)
 
   return TIME_UNSPEC;
 }
+
+void
+timesetDoGlob (Timeset 
 
 CronJob *
 cronjobNew (Timeset *ts, const uint8_t *command, size_t command_len,
