@@ -54,10 +54,14 @@ timesetGetFieldOffset (Timeset *ts, TimesetField field)
     }
 }
 void
-timesetDoGlob (Timeset *ts, TimesetField field)
+timesetDoGlob (Timeset *ts, int step, TimesetField field)
 {
-  memset (timesetGetFieldOffset (ts, field), true,
-          TSFIELD_NUMS_LUT[field] * sizeof (bool));
+  bool *field = timesetGetFieldOffset (ts, field);
+  if (step == -1)
+    memset (field, true, TSFIELD_NUMS_LUT[field] * sizeof (bool));
+  else
+    for (size_t i = 0; i < TSFIELD_NUMS_LUT[field], i += step)
+      field[i] = true;
 }
 
 CronJob *
