@@ -101,10 +101,10 @@ parserHandleField (Timeset *ts, const char *lnptr, TimesetField tsfld)
                 {
                   lnptr++;
                   int step = parserLexInteger (lnptr);
-                  timesetDoListStep (ts, &numlst[0], lstn, step);
+                  timesetDoListStep (ts, &numlst[0], lstn, step, tsfld);
                 }
               else
-                timesetDoList (ts, &numlst[0], lstn);
+                timesetDoList (ts, &numlst[0], lstn, tsfld);
             }
           else
             timesetDoIndex (ts, num, tsfld);
