@@ -36,9 +36,16 @@ parserLexInteger (const char *lnptr)
   return strtod (&buf[0], NULL);
 }
 
+char *
+parserSubstituteSymbolicNames (const char *lnptr)
+{
+  // TODO
+}
+
 void
 parserHandleField (Timeset *ts, const char *lnptr, TimesetField tsfld)
 {
+  lnptr = parserSubstituteSymbolicNames (lnptr);
   char chr = 0;
   while (!isblank (*lnptr))
     {
@@ -70,13 +77,38 @@ parserHandleField (Timeset *ts, const char *lnptr, TimesetField tsfld)
             {
               lnptr++;
               int range = parserLexInteger (lnptr);
-              timesetDoRange (ts, num, range, tsfld);
+              if (*lnptr == '/')
+                {
+                  lnptr++; // skip slash
+                  int step = parserLexInteger (lnptr);
+                  timestepDoRangeStep (ts, num, range, step, tsfld);
+                }
+              else
+                timestepDoRange (ts, num, range, tsfld);
+            }
+          else if (*lnptr == ',')
+            {
+              int numlst[NUM_Mins + 1] = { -1 };
+              size_t lstn = 0;
+              while (true)
+                {
+                  lnptr++; // skip comma
+                  numlst[lstn++] = parserLexInteger (lnptr);
+                  if (*lnptr != ',')
+                    break;
+                }
+              if (*lnptr == '/')
+                {
+                  lnptr++;
+                  int step = parserLexInteger (lnptr);
+                  timesetDoListStep (ts, &numlst[0], lstn, step);
+                }
+              else
+                timesetDoList (ts, &numlst[0], lstn);
             }
           else
             timesetDoIndex (ts, num, tsfld);
         }
-      else if (chr == ',')
-        lnptr++;
 
       lnptr++;
     }
