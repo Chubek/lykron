@@ -251,7 +251,7 @@ _get_pid_from_file (void)
       exit (EXIT_FAILURE);
     }
   pid_t pid = 0;
-  sscanf (fstream, "%d", &pid);
+  sscanf (fstream, "%d\n", &pid);
   fclose (fstream);
   return pid;
 }
