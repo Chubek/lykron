@@ -63,7 +63,7 @@
 #define NUM_Hours 24
 #define NUM_DoM 32
 #define NUM_Month 13
-#define NUM_DoW 7
+#define NUM_DoW 8
 
 #define LOOKAHEAD(sptr) (*(sptr + 1))
 
