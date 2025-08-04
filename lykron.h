@@ -51,6 +51,9 @@
 #define MAX_BUF 4096
 #define MAX_ID 16
 #define MAX_INTEGER 24
+#define MAX_NUM_TOKEN 24
+#define MAX_SYM_TOKEN 5
+
 #define ARGC_DFL 32
 
 #define NLIM 32
@@ -312,7 +315,7 @@ _intern_symbolic_tokens (void)
 
   GLOBAL_STAB = symtblNew ();
   for (size_t i = 0; symbols[i] != NULL && values[i] != -1; i++)
-    symtblSetNumeric (GLOBAL_STAB, symbols[i], values[i]);
+    symtblSetNumeric (GLOBAL_STAB, symbols[i], MAX_SYM_TOKEN, values[i]);
 }
 
 #endif
