@@ -21,12 +21,12 @@ timesetComputeNextOccurence (Timeset *ts, time_t now)
       int minute = tm.tm_min;
       int hour = tm.tm_hour;
       int mday = tm.tm_mday;
-      int mon_read = tm.tm_mon;
+      int mon = tm.tm_mon;
       int wday = tm.tm_wday;
 
       if (ts->mins[minute] && ts->hours[hour] && ts->month[mon]
-          && (ts->dom[mday] || ts->dow[wday]))
-        return candidate;
+		      && (ts->dom[mday] || ts->dow[wday]))
+	      return candidate;
 
       tm.tm_min++;
     }
@@ -70,7 +70,7 @@ cronjobNew (Timeset *ts, const uint8_t *command, size_t command_len,
 {
   CronJob *cj = memAllocSafe (sizeof (CronJob));
   cj->command = strndup (command, command_len);
-  cj->command_len_read = command_len;
+  cj->command_len = command_len;
   cj->argv = NULL;
   cj->next = NULL;
 
