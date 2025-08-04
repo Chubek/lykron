@@ -22,15 +22,15 @@ parserAssessLineKind (const char *ln)
   else if (isalpha (ln[0]))
     return LINE_Assign;
   else
-    raiseSyntaxError ("Unkown line");
+    _raise_syntax_err ("Unkown line");
 }
 
 int
 parserLexNumeric (const char **lnptr)
 {
-  char buf[MAX_INTEGER + 1] = { 0 };
+  char buf[MAX_NUM_TOKEN + 1] = { 0 };
 
-  for (size_t i = 0; i < MAX_INTEGER && isdigit (**lnptr); i++)
+  for (size_t i = 0; i < MAX_NUM_TOKEN && isdigit (**lnptr); i++)
     buf[i] = **lnptr++;
 
   return strtod (&buf[0], NULL);
@@ -39,7 +39,16 @@ parserLexNumeric (const char **lnptr)
 int
 parsrLexSymbolic (const char **lnptr)
 {
-  // TODO
+  char buf[MAX_SYM_TOKEN + 1] = { 0 };
+
+  for (size_t i = 0; i < MAX_SYM_TOKEN && isalpha (**lnptr); i++)
+    buf[i] = **lnptr++;
+
+  char *nval = symtblGet (GLOBAL_STAB, &buf[0]);
+  if (nval == NULL)
+    _raise_syntax_err ("Unknown symbol");
+
+  return *((int *)nval);
 }
 
 int
