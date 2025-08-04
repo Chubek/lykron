@@ -171,7 +171,7 @@ cronjobPrepCommand (CronJob *cj)
           size_t old_max_argc = max_argc;
           max_argc += ARGC_DFL;
           cj->argv
-              = memReallocSafe (cj->argv, old_max_argc, argc, sizeof (char *));
+              = memReallocSafe (cj->argv, old_max_argc, max_argc, sizeof (char *));
         }
       cj->argv[cj->argc++] = strdup (subtok);
       subtok = strtok (NULL, "\t ");
