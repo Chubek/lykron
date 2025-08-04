@@ -44,11 +44,11 @@ parsrLexSymbolic (const char **lnptr)
   for (size_t i = 0; i < MAX_SYM_TOKEN && isalpha (**lnptr); i++)
     buf[i] = **lnptr++;
 
-  char *nval = symtblGet (GLOBAL_STAB, &buf[0]);
-  if (nval == NULL)
+  int val = symtblGetNumeric (GLOBAL_STAB, &buf[0]);
+  if (val == -1)
     _raise_syntax_err ("Unknown symbol");
 
-  return *((int *)nval);
+  return val;
 }
 
 int
