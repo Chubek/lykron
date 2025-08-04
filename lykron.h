@@ -107,7 +107,11 @@ typedef struct Symtbl
   struct Symbol
   {
     const uint8_t *key;
-    uint8_t *value;
+    union
+    {
+      int v_num;
+      uint8_t *v_str;
+    } value;
     bool occupied;
   } *symbols;
   size_t num_symbols;
@@ -306,8 +310,9 @@ _intern_symbolic_tokens (void)
     1, 2, 3, 4, 5, 6, 7, 8, 8, 10, 11, 12, 0, 1, 2, 3, 4, 5, 6, 7, -1,
   };
 
+  GLOBAL_STAB = symtblNew ();
   for (size_t i = 0; symbols[i] != NULL && values[i] != -1; i++)
-    symtblSet (GLOBAL_STAB, symbols[i], (char *)values[i]);
+    symtblSetNumeric (GLOBAL_STAB, symbols[i], values[i]);
 }
 
 #endif
