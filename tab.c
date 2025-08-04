@@ -32,7 +32,8 @@ symtblDelete (Symtbl *stab)
       if (stab->symbols[i].occupied)
         {
           memDeallocSafe (stab->symbols[i].key);
-          memDeallocSafe (stab->symbols[i].value);
+          if (stab->symbols[i].value.v_str)
+            memDeallocSafe (stab->symbols[i].value.v_str);
         }
     }
 
@@ -63,7 +64,33 @@ symtblSet (Symtbl *stab, const uint8_t *key, size_t key_len, uint8_t *value,
   else
     {
       stab->symbols[idx].key = strndup (key, key_len);
-      stab->symbols[idx].value = strndup (value, value_len);
+      stab->symbols[idx].value.v_str = strndup (value, value_len);
+      stab->symbols[idx].occupied = true;
+      stab->num_symbols++;
+    }
+}
+
+void
+symtblSetNumeric (Symtbl *stab, const uint8_t *key, size_t key_len, int value)
+{
+
+  if (stab->num_symbols + 1 >= stab->max_symbols)
+    {
+      size_t old_max_symbols = stab->max_symbols;
+      stab->max_symbols <<= 1;
+      stab->log2 += 1;
+      stab->symbols
+          = memReallocSafe (stab->symbols, old_max_symbols, stab->max_symbols,
+                            sizeof (struct Symbol));
+    }
+
+  size_t idx = _knuth_hash32 (key, stab->log2);
+  if (stab->symbols[idx].occupied)
+    stab->symbols[idx].value = value;
+  else
+    {
+      stab->symbols[idx].key = strndup (key, key_len);
+      stab->symbols[idx].value.v_num = value;
       stab->symbols[idx].occupied = true;
       stab->num_symbols++;
     }
@@ -72,11 +99,21 @@ symtblSet (Symtbl *stab, const uint8_t *key, size_t key_len, uint8_t *value,
 char *
 symtblGet (Symtbl *stab, const uint8_t *key)
 {
-  size_t idx = _fnv1a_hash32 (key) % stab->max_symbols;
+  size_t idx = _knuth_hash32 (key, stab->log2);
   if (idx >= stab->max_symbols || !stab->symbols[idx].occupied)
     return NULL;
   else
-    return stab->symbols[idx].value;
+    return stab->symbols[idx].value.v_str;
+}
+
+int
+symtblGetNumeric (Symtbl *stab, const uint8_t *key)
+{
+  size_t idx = _knuth_hash32 (key, stab->log2);
+  if (idx >= stab->max_symbols || !stab->symbols[idex].occupied)
+    return -1;
+  else
+    return stab->symbols[idx].value.v_num;
 }
 
 char **
