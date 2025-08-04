@@ -178,6 +178,8 @@ typedef enum
   TSFIELD_TimesetField = 5,
 } TimesetField;
 
+static Symtbl *GLOBAL_STAB = NULL;
+
 static const int TSFIELD_NUMS_LUT[TimesetField] = {
   [TSFIELD_Mins] = NUM_Mins, [TSFIELD_Hours] = NUM_Hours,
   [TSFIELD_DoM] = NUM_DoM,   [TSFIELD_Month] = NUM_Month,
@@ -276,9 +278,36 @@ _delete_pid_file (void)
 static inline void
 _err_out (const char *msg)
 {
-  perror (msg);
+  size_t msglen = strlen (msg);
+  char msgdup[msglen + 4] = { '\n' };
+  strncat (&msgdup[0], msg, msglen);
+  perror (&msgdup[0]);
   _delete_pid_file ();
   exit (EXIT_FAILURE);
+}
+
+static inline void
+_raise_syntax_err (const char *msg, size_t lnno, size_t colno)
+{
+  fprintf (stderr, "Syntax error: %s, line: %lu, column: %lu\n", msg, lnno,
+           colno);
+  _delete_pid_file ();
+  exit (EXIT_FAILURE);
+}
+
+static inline void
+_intern_symbolic_tokens (void)
+{
+  static const char *const symbols[] = {
+    "jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "ot",
+    "nov", "dec", "mon", "tue", "wed", "thu", "fri", "sat", "sun", NULL,
+  };
+  static const int values[] = {
+    1, 2, 3, 4, 5, 6, 7, 8, 8, 10, 11, 12, 0, 1, 2, 3, 4, 5, 6, 7, -1,
+  };
+
+  for (size_t i = 0; symbols[i] != NULL && values[i] != -1; i++)
+    symtblSet (GLOBAL_STAB, symbols[i], (char *)values[i]);
 }
 
 #endif
