@@ -25,8 +25,8 @@ timesetComputeNextOccurence (Timeset *ts, time_t now)
       int wday = tm.tm_wday;
 
       if (ts->mins[minute] && ts->hours[hour] && ts->month[mon]
-		      && (ts->dom[mday] || ts->dow[wday]))
-	      return candidate;
+          && (ts->dom[mday] || ts->dow[wday]))
+        return candidate;
 
       tm.tm_min++;
     }
@@ -62,6 +62,28 @@ timesetDoGlob (Timeset *ts, int step, TimesetField field)
   else
     for (size_t i = 0; i < TSFIELD_NUMS_LUT[field], i += step)
       field[i] = true;
+}
+
+void
+timesetDoList (Timeset *ts, int *lst, size_t lstlen, TimesetField field)
+{
+  bool *field = timesetGetFieldOffset (ts, field);
+  for (size_t i = 0; i < lstlen; i++)
+    {
+      int elt = lst[i];
+      if (MARK_UpperBitIsSet (elt))
+        {
+          int lower = RANGE_GetLower (elt);
+          int upper = RANGE_GetUpper (elt);
+
+          if (upper - lower > TSFIELD_NUMS_LUT[field])
+            _err_out ("Field out of range");
+
+          memset (&field[lower], true, (upper - lower) * sizeof (bool));
+        }
+      else
+        field[elt] = true;
+    }
 }
 
 CronJob *
@@ -170,8 +192,8 @@ cronjobPrepCommand (CronJob *cj)
         {
           size_t old_max_argc = max_argc;
           max_argc += ARGC_DFL;
-          cj->argv
-              = memReallocSafe (cj->argv, old_max_argc, max_argc, sizeof (char *));
+          cj->argv = memReallocSafe (cj->argv, old_max_argc, max_argc,
+                                     sizeof (char *));
         }
       cj->argv[cj->argc++] = strdup (subtok);
       subtok = strtok (NULL, "\t ");
