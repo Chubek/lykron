@@ -86,6 +86,46 @@ timesetDoList (Timeset *ts, int *lst, size_t lstlen, TimesetField field)
     }
 }
 
+void
+timesetDoReboot (Timeset *ts)
+{
+  // TODO
+}
+
+void
+timesetDoYearly (Timeset *ts)
+{
+  ts->dom[1] = true;
+  ts->month[1] = true;
+}
+
+void
+timesetDoMonthly (Timeset *ts)
+{
+  ts->dom[1] = true;
+}
+
+void
+timesetDoWeekly (Timeset *ts)
+{
+  ts->mins[0] = true;
+  ts->hours[0] = true;
+  ts->dow[0] = true;
+}
+
+void
+timesetDoDaily (Timeset *ts)
+{
+  ts->mins[0] = true;
+  ts->hours[0] = true;
+}
+
+void
+timesetDoHourly (Timeset *ts)
+{
+  ts->mins[0] = true;
+}
+
 CronJob *
 cronjobNew (Timeset *ts, const uint8_t *command, size_t command_len,
             const char *user)
